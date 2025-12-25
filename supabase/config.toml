@@ -1,1 +1,10 @@
 project_id = "ktdbpakqyjbdpjzsprse"
+
+[functions.analyze-profile-image]
+verify_jwt = true
+
+[functions.detect-clothing]
+verify_jwt = false
+
+[functions.suggest-outfit]
+verify_jwt = true
