@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,10 @@ import {
   Save,
   Palette,
   Ruler,
-  Scissors
+  Scissors,
+  Camera,
+  Sparkles,
+  Upload
 } from 'lucide-react';
 
 const bodyTypes = [
@@ -68,6 +71,9 @@ export default function Profile() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     full_name: '',
     body_type: '',
@@ -77,6 +83,75 @@ export default function Profile() {
     style_preference: '',
     preferred_colors: [] as string[],
   });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image smaller than 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        setPreviewImage(base64);
+
+        // Call the AI analysis edge function
+        const { data, error } = await supabase.functions.invoke('analyze-profile-image', {
+          body: { imageBase64: base64 },
+        });
+
+        if (error) throw error;
+
+        const analysis = data.analysis;
+        
+        // Update profile with AI predictions
+        setProfile(prev => ({
+          ...prev,
+          body_type: analysis.body_type || prev.body_type,
+          skin_tone: analysis.skin_tone || prev.skin_tone,
+          hair_color: analysis.hair_color || prev.hair_color,
+          hair_style: analysis.hair_style || prev.hair_style,
+        }));
+
+        toast({
+          title: 'Analysis Complete',
+          description: `Detected your features with ${analysis.confidence}% confidence. You can adjust if needed.`,
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: 'Could not analyze the image. Please try again or set manually.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     if (user) fetchProfile();
@@ -192,12 +267,83 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        {/* AI Photo Analysis */}
+        <Card variant="elevated" className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-primary" />
+              AI Photo Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload a photo and let AI detect your body type, skin tone, and hair features automatically.
+            </p>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            <div className="flex flex-col md:flex-row gap-6 items-center">
+              {/* Preview Area */}
+              <div 
+                onClick={() => !analyzing && fileInputRef.current?.click()}
+                className={`w-40 h-40 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden ${
+                  previewImage ? 'border-primary' : 'border-border hover:border-primary/50'
+                } ${analyzing ? 'opacity-50 cursor-wait' : ''}`}
+              >
+                {previewImage ? (
+                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center p-4">
+                    <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <span className="text-sm text-muted-foreground">Upload Photo</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={analyzing}
+                  className="w-full md:w-auto"
+                >
+                  {analyzing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {previewImage ? 'Upload New Photo' : 'Upload & Analyze'}
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  For best results, use a well-lit, full-body photo. Max 5MB.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Body & Features */}
         <Card variant="elevated">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Ruler className="w-5 h-5 text-primary" />
               Body & Features
+              {(profile.body_type || profile.skin_tone || profile.hair_color || profile.hair_style) && (
+                <span className="ml-auto text-xs font-normal text-muted-foreground">
+                  {previewImage ? 'AI detected • adjust if needed' : 'Set manually'}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-4">
