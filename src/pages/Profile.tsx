@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -12,37 +10,36 @@ import {
   User,
   Save,
   Palette,
-  Ruler,
-  Scissors,
-  Camera,
   Sparkles,
-  Upload
+  Camera,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 
 const bodyTypes = [
-  { value: 'slim', label: 'Slim' },
-  { value: 'athletic', label: 'Athletic' },
-  { value: 'average', label: 'Average' },
-  { value: 'curvy', label: 'Curvy' },
-  { value: 'plus', label: 'Plus Size' },
+  { value: 'slim', label: 'Slim', icon: '🏃' },
+  { value: 'athletic', label: 'Athletic', icon: '💪' },
+  { value: 'average', label: 'Average', icon: '👤' },
+  { value: 'curvy', label: 'Curvy', icon: '✨' },
+  { value: 'plus', label: 'Plus Size', icon: '🌟' },
 ];
 
 const skinTones = [
-  { value: 'fair', label: 'Fair' },
-  { value: 'light', label: 'Light' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'olive', label: 'Olive' },
-  { value: 'tan', label: 'Tan' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'fair', label: 'Fair', color: '#FDEBD0' },
+  { value: 'light', label: 'Light', color: '#F5CBA7' },
+  { value: 'medium', label: 'Medium', color: '#D4A574' },
+  { value: 'olive', label: 'Olive', color: '#C19A6B' },
+  { value: 'tan', label: 'Tan', color: '#A67B5B' },
+  { value: 'dark', label: 'Dark', color: '#6F4E37' },
 ];
 
 const hairColors = [
-  { value: 'blonde', label: 'Blonde' },
-  { value: 'brown', label: 'Brown' },
-  { value: 'black', label: 'Black' },
-  { value: 'red', label: 'Red' },
-  { value: 'gray', label: 'Gray' },
-  { value: 'other', label: 'Other' },
+  { value: 'blonde', label: 'Blonde', color: '#F4D03F' },
+  { value: 'brown', label: 'Brown', color: '#6B4423' },
+  { value: 'black', label: 'Black', color: '#1C1C1C' },
+  { value: 'red', label: 'Red', color: '#A52A2A' },
+  { value: 'gray', label: 'Gray', color: '#808080' },
+  { value: 'other', label: 'Other', color: 'linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1)' },
 ];
 
 const hairStyles = [
@@ -53,17 +50,27 @@ const hairStyles = [
 ];
 
 const stylePreferences = [
-  { value: 'casual', label: 'Casual' },
-  { value: 'formal', label: 'Formal' },
-  { value: 'streetwear', label: 'Streetwear' },
-  { value: 'bohemian', label: 'Bohemian' },
-  { value: 'minimalist', label: 'Minimalist' },
-  { value: 'classic', label: 'Classic' },
+  { value: 'casual', label: 'Casual', desc: 'Relaxed & comfortable' },
+  { value: 'formal', label: 'Formal', desc: 'Professional & elegant' },
+  { value: 'streetwear', label: 'Streetwear', desc: 'Urban & trendy' },
+  { value: 'bohemian', label: 'Bohemian', desc: 'Free-spirited & artistic' },
+  { value: 'minimalist', label: 'Minimalist', desc: 'Clean & simple' },
+  { value: 'classic', label: 'Classic', desc: 'Timeless & refined' },
 ];
 
 const colorOptions = [
-  'Black', 'White', 'Navy', 'Gray', 'Brown', 'Beige',
-  'Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple'
+  { name: 'Black', hex: '#1a1a1a' },
+  { name: 'White', hex: '#f5f5f5' },
+  { name: 'Navy', hex: '#1e3a5f' },
+  { name: 'Gray', hex: '#6b7280' },
+  { name: 'Brown', hex: '#7c4a03' },
+  { name: 'Beige', hex: '#d4b896' },
+  { name: 'Red', hex: '#dc2626' },
+  { name: 'Blue', hex: '#2563eb' },
+  { name: 'Green', hex: '#16a34a' },
+  { name: 'Yellow', hex: '#eab308' },
+  { name: 'Pink', hex: '#ec4899' },
+  { name: 'Purple', hex: '#9333ea' },
 ];
 
 export default function Profile() {
@@ -88,36 +95,24 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file',
-        description: 'Please upload an image file.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid file', description: 'Please upload an image file.', variant: 'destructive' });
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload an image smaller than 5MB.',
-        variant: 'destructive',
-      });
+      toast({ title: 'File too large', description: 'Please upload an image smaller than 5MB.', variant: 'destructive' });
       return;
     }
 
     setAnalyzing(true);
 
     try {
-      // Convert to base64
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64 = event.target?.result as string;
         setPreviewImage(base64);
 
-        // Call the AI analysis edge function
         const { data, error } = await supabase.functions.invoke('analyze-profile-image', {
           body: { imageBase64: base64 },
         });
@@ -126,7 +121,6 @@ export default function Profile() {
 
         const analysis = data.analysis;
         
-        // Update profile with AI predictions
         setProfile(prev => ({
           ...prev,
           body_type: analysis.body_type || prev.body_type,
@@ -135,20 +129,13 @@ export default function Profile() {
           hair_style: analysis.hair_style || prev.hair_style,
         }));
 
-        toast({
-          title: 'Analysis Complete',
-          description: `Detected your features with ${analysis.confidence}% confidence. You can adjust if needed.`,
-        });
+        toast({ title: 'Analysis Complete', description: `Detected with ${analysis.confidence}% confidence.` });
+        setAnalyzing(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error analyzing image:', error);
-      toast({
-        title: 'Analysis Failed',
-        description: 'Could not analyze the image. Please try again or set manually.',
-        variant: 'destructive',
-      });
-    } finally {
+      toast({ title: 'Analysis Failed', description: 'Could not analyze the image.', variant: 'destructive' });
       setAnalyzing(false);
     }
   };
@@ -196,16 +183,9 @@ export default function Profile() {
       .eq('user_id', user?.id);
 
     if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update profile.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to update profile.', variant: 'destructive' });
     } else {
-      toast({
-        title: 'Profile Updated',
-        description: 'Your style profile has been saved.',
-      });
+      toast({ title: 'Profile Updated', description: 'Your style profile has been saved.' });
     }
     setSaving(false);
   };
@@ -223,7 +203,7 @@ export default function Profile() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center py-20">
-          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         </div>
       </AppLayout>
     );
@@ -232,237 +212,245 @@ export default function Profile() {
   return (
     <AppLayout>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl mx-auto space-y-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-4xl mx-auto pb-12"
       >
-        {/* Header */}
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent mx-auto mb-6 flex items-center justify-center shadow-[0_4px_30px_-5px_hsla(38,92%,50%,0.4)]">
-            <User className="w-10 h-10 text-primary-foreground" />
+        {/* Header with Photo Upload */}
+        <div className="relative mb-12">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent rounded-3xl blur-3xl" />
+          <div className="relative glass-panel rounded-3xl p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {/* Photo Upload Area */}
+              <div className="relative group">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => !analyzing && fileInputRef.current?.click()}
+                  className={`relative w-36 h-36 md:w-44 md:h-44 rounded-full cursor-pointer overflow-hidden transition-all duration-500 ${
+                    analyzing ? 'animate-pulse' : ''
+                  }`}
+                >
+                  {/* Outer ring */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-accent to-primary p-[3px]">
+                    <div className="w-full h-full rounded-full bg-card overflow-hidden">
+                      {previewImage ? (
+                        <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50">
+                          <Camera className="w-10 h-10 text-muted-foreground mb-2" />
+                          <span className="text-xs text-muted-foreground text-center px-4">
+                            Add Photo
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Hover overlay */}
+                  <div className="absolute inset-[3px] rounded-full bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="text-center">
+                      <Sparkles className="w-6 h-6 mx-auto text-primary mb-1" />
+                      <span className="text-xs font-medium">
+                        {analyzing ? 'Analyzing...' : 'AI Scan'}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Status badge */}
+                <AnimatePresence>
+                  {previewImage && !analyzing && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-gold"
+                    >
+                      <Check className="w-4 h-4 text-primary-foreground" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Name and Email */}
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 text-gradient-gold">
+                  Style Profile
+                </h1>
+                <p className="text-muted-foreground mb-6">
+                  Upload a photo for AI-powered feature detection
+                </p>
+                <Input
+                  value={profile.full_name}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  placeholder="Your name"
+                  className="max-w-xs bg-secondary/50 border-border/50"
+                />
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl font-display font-bold mb-3">Style Profile</h1>
-          <p className="text-muted-foreground text-lg">
-            Help us understand your style for better outfit recommendations
-          </p>
         </div>
 
-        {/* Basic Info */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              Basic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Full Name</label>
-              <Input
-                value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Your name"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Photo Analysis */}
-        <Card variant="elevated" className="overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="w-5 h-5 text-primary" />
-              AI Photo Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Upload a photo and let AI detect your body type, skin tone, and hair features automatically.
-            </p>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-              {/* Preview Area */}
-              <div 
-                onClick={() => !analyzing && fileInputRef.current?.click()}
-                className={`w-40 h-40 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden ${
-                  previewImage ? 'border-primary' : 'border-border hover:border-primary/50'
-                } ${analyzing ? 'opacity-50 cursor-wait' : ''}`}
+        {/* Body Type Selection */}
+        <Section title="Body Type" icon={<User className="w-5 h-5" />}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {bodyTypes.map((type) => (
+              <SelectCard
+                key={type.value}
+                selected={profile.body_type === type.value}
+                onClick={() => setProfile({ ...profile, body_type: type.value })}
               >
-                {previewImage ? (
-                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center p-4">
-                    <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Upload Photo</span>
+                <span className="text-2xl mb-2">{type.icon}</span>
+                <span className="text-sm font-medium">{type.label}</span>
+              </SelectCard>
+            ))}
+          </div>
+        </Section>
+
+        {/* Skin Tone */}
+        <Section title="Skin Tone" icon={<Palette className="w-5 h-5" />}>
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+            {skinTones.map((tone) => (
+              <motion.button
+                key={tone.value}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setProfile({ ...profile, skin_tone: tone.value })}
+                className={`group relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                  profile.skin_tone === tone.value
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                    : 'hover:bg-secondary/50'
+                }`}
+              >
+                <div
+                  className="w-12 h-12 rounded-full shadow-md transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: tone.color }}
+                />
+                <span className="text-xs font-medium">{tone.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </Section>
+
+        {/* Hair Color */}
+        <Section title="Hair Color" icon={<ChevronRight className="w-5 h-5" />}>
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+            {hairColors.map((color) => (
+              <motion.button
+                key={color.value}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setProfile({ ...profile, hair_color: color.value })}
+                className={`group relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                  profile.hair_color === color.value
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                    : 'hover:bg-secondary/50'
+                }`}
+              >
+                <div
+                  className="w-12 h-12 rounded-full shadow-md transition-transform group-hover:scale-110 border border-border/30"
+                  style={{ background: color.color }}
+                />
+                <span className="text-xs font-medium">{color.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </Section>
+
+        {/* Hair Style */}
+        <Section title="Hair Style" icon={<ChevronRight className="w-5 h-5" />}>
+          <div className="flex flex-wrap gap-3">
+            {hairStyles.map((style) => (
+              <SelectPill
+                key={style.value}
+                selected={profile.hair_style === style.value}
+                onClick={() => setProfile({ ...profile, hair_style: style.value })}
+                label={style.label}
+              />
+            ))}
+          </div>
+        </Section>
+
+        {/* Style Preference */}
+        <Section title="Style Preference" icon={<Sparkles className="w-5 h-5" />}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {stylePreferences.map((style) => (
+              <motion.button
+                key={style.value}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setProfile({ ...profile, style_preference: style.value })}
+                className={`relative p-4 rounded-2xl text-left transition-all duration-300 overflow-hidden ${
+                  profile.style_preference === style.value
+                    ? 'bg-primary/15 border border-primary/50'
+                    : 'bg-secondary/30 border border-transparent hover:border-border/50'
+                }`}
+              >
+                {profile.style_preference === style.value && (
+                  <div className="absolute top-3 right-3">
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    </div>
                   </div>
                 )}
-              </div>
+                <h3 className="font-semibold mb-1">{style.label}</h3>
+                <p className="text-xs text-muted-foreground">{style.desc}</p>
+              </motion.button>
+            ))}
+          </div>
+        </Section>
 
-              <div className="flex-1 space-y-3">
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={analyzing}
-                  className="w-full md:w-auto"
-                >
-                  {analyzing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      {previewImage ? 'Upload New Photo' : 'Upload & Analyze'}
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  For best results, use a well-lit, full-body photo. Max 5MB.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Body & Features */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ruler className="w-5 h-5 text-primary" />
-              Body & Features
-              {(profile.body_type || profile.skin_tone || profile.hair_color || profile.hair_style) && (
-                <span className="ml-auto text-xs font-normal text-muted-foreground">
-                  {previewImage ? 'AI detected • adjust if needed' : 'Set manually'}
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Body Type</label>
-              <Select value={profile.body_type} onValueChange={(v) => setProfile({ ...profile, body_type: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select body type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bodyTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Skin Tone</label>
-              <Select value={profile.skin_tone} onValueChange={(v) => setProfile({ ...profile, skin_tone: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select skin tone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {skinTones.map(tone => (
-                    <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Hair Color</label>
-              <Select value={profile.hair_color} onValueChange={(v) => setProfile({ ...profile, hair_color: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select hair color" />
-                </SelectTrigger>
-                <SelectContent>
-                  {hairColors.map(color => (
-                    <SelectItem key={color.value} value={color.value}>{color.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Hair Style</label>
-              <Select value={profile.hair_style} onValueChange={(v) => setProfile({ ...profile, hair_style: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select hair style" />
-                </SelectTrigger>
-                <SelectContent>
-                  {hairStyles.map(style => (
-                    <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Style Preferences */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scissors className="w-5 h-5 text-primary" />
-              Style Preference
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {stylePreferences.map(style => (
-                <button
-                  key={style.value}
-                  onClick={() => setProfile({ ...profile, style_preference: style.value })}
-                  className={`p-4 rounded-xl border text-center transition-all duration-300 ${
-                    profile.style_preference === style.value
-                      ? 'border-primary bg-primary/10 text-foreground'
-                      : 'border-border bg-secondary/30 text-muted-foreground hover:border-primary/50'
-                  }`}
-                >
-                  {style.label}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Color Preferences */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Preferred Colors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Select colors you love to wear</p>
-            <div className="flex flex-wrap gap-3">
-              {colorOptions.map(color => (
-                <button
-                  key={color}
-                  onClick={() => toggleColor(color)}
-                  className={`px-4 py-2 rounded-full border text-sm transition-all duration-300 ${
-                    profile.preferred_colors.includes(color)
-                      ? 'border-primary bg-primary/10 text-foreground'
-                      : 'border-border bg-secondary/30 text-muted-foreground hover:border-primary/50'
-                  }`}
-                >
-                  {color}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Preferred Colors */}
+        <Section title="Preferred Colors" icon={<Palette className="w-5 h-5" />}>
+          <p className="text-sm text-muted-foreground mb-4">Select colors you love to wear</p>
+          <div className="flex flex-wrap gap-2">
+            {colorOptions.map((color) => (
+              <motion.button
+                key={color.name}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => toggleColor(color.name)}
+                className={`group relative flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
+                  profile.preferred_colors.includes(color.name)
+                    ? 'bg-primary/15 border border-primary/50'
+                    : 'bg-secondary/30 border border-transparent hover:border-border/50'
+                }`}
+              >
+                <div
+                  className="w-4 h-4 rounded-full border border-white/20"
+                  style={{ backgroundColor: color.hex }}
+                />
+                <span className="text-sm">{color.name}</span>
+                {profile.preferred_colors.includes(color.name) && (
+                  <Check className="w-3 h-3 text-primary" />
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </Section>
 
         {/* Save Button */}
-        <div className="flex justify-center pb-8">
-          <Button variant="gold" size="lg" onClick={handleSave} disabled={saving}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center mt-12"
+        >
+          <Button 
+            variant="gold" 
+            size="lg" 
+            onClick={handleSave} 
+            disabled={saving}
+            className="px-12 py-6 text-lg shadow-gold"
+          >
             {saving ? (
               <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
             ) : (
@@ -472,8 +460,82 @@ export default function Profile() {
               </>
             )}
           </Button>
-        </div>
+        </motion.div>
       </motion.div>
     </AppLayout>
+  );
+}
+
+// Reusable Section Component
+function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-10"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-primary">{icon}</span>
+        <h2 className="text-lg font-semibold">{title}</h2>
+      </div>
+      {children}
+    </motion.div>
+  );
+}
+
+// Selection Card Component
+function SelectCard({ 
+  selected, 
+  onClick, 
+  children 
+}: { 
+  selected: boolean; 
+  onClick: () => void; 
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.button
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-300 ${
+        selected
+          ? 'bg-primary/15 border-2 border-primary shadow-gold'
+          : 'bg-secondary/30 border-2 border-transparent hover:border-border/50'
+      }`}
+    >
+      {children}
+      {selected && (
+        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+          <Check className="w-2.5 h-2.5 text-primary-foreground" />
+        </div>
+      )}
+    </motion.button>
+  );
+}
+
+// Selection Pill Component
+function SelectPill({ 
+  selected, 
+  onClick, 
+  label 
+}: { 
+  selected: boolean; 
+  onClick: () => void; 
+  label: string;
+}) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+        selected
+          ? 'bg-primary text-primary-foreground shadow-gold'
+          : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
+      }`}
+    >
+      {label}
+    </motion.button>
   );
 }
