@@ -12,10 +12,10 @@ import {
   Menu, 
   X,
   Home,
-  Heart,
-  Settings
+  Heart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Logo';
 
 const navItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
@@ -78,14 +78,9 @@ export default function Sidebar() {
         </button>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-gold">
-            <Sparkles className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-xl font-display font-bold text-gradient-gold">StyleAI</h1>
-            <p className="text-xs text-muted-foreground">Your AI Stylist</p>
-          </div>
+        <div className="mb-8">
+          <Logo size="md" />
+          <p className="text-xs text-muted-foreground mt-1 ml-[52px]">Your AI Stylist</p>
         </div>
 
         {/* Navigation */}
