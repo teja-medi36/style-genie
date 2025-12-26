@@ -361,18 +361,43 @@ export default function SearchOutfits() {
                       className="w-full h-full object-cover"
                     />
                     {selectedLook.hotspots.map((hotspot) => (
-                      <motion.button
+                      <motion.div
                         key={hotspot.id}
-                        className="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary flex items-center justify-center shadow-lg"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 group"
                         style={{ left: `${hotspot.x}%`, top: `${hotspot.y}%` }}
-                        onClick={() => handleHotspotClick(hotspot)}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
                       >
-                        <ShoppingBag className="w-4 h-4 text-primary-foreground" />
-                      </motion.button>
+                        {/* Pulse ring */}
+                        <motion.div
+                          className="absolute inset-0 w-10 h-10 -translate-x-1 -translate-y-1 rounded-full bg-primary/30"
+                          animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                        
+                        {/* Main button */}
+                        <motion.button
+                          className="relative w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-primary-foreground/50 z-10"
+                          onClick={() => handleHotspotClick(hotspot)}
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <ShoppingBag className="w-4 h-4 text-primary-foreground" />
+                        </motion.button>
+
+                        {/* Label tooltip */}
+                        <motion.div
+                          className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-background/95 backdrop-blur-sm rounded-lg shadow-xl border border-border whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-20"
+                          initial={{ y: 5 }}
+                          whileHover={{ y: 0 }}
+                        >
+                          <p className="text-xs font-semibold text-foreground">{hotspot.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{hotspot.category}</p>
+                          {/* Arrow */}
+                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border" />
+                        </motion.div>
+                      </motion.div>
                     ))}
                   </div>
 
