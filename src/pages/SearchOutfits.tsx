@@ -89,12 +89,13 @@ const defaultLookbooks: Lookbook[] = [
 interface ProductResult {
   id: number;
   name: string;
-  price: number;
-  originalPrice: number;
   store: string;
-  rating: number;
-  image: string;
+  logo?: string;
   url: string;
+  image: string;
+  category?: string;
+  color?: string;
+  style?: string;
 }
 
 export default function SearchOutfits() {
@@ -398,33 +399,21 @@ export default function SearchOutfits() {
                             Clear
                           </button>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {searchResults.map((result) => (
-                            <div key={result.id} className="card-clean p-3 flex gap-3">
-                              <img
-                                src={result.image}
-                                alt={result.name}
-                                className="w-16 h-20 object-cover rounded-lg"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{result.name}</p>
-                                <p className="text-xs text-muted-foreground">{result.store}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-primary font-bold">${result.price}</span>
-                                  <span className="text-xs text-muted-foreground line-through">${result.originalPrice}</span>
-                                </div>
-                                <div className="flex items-center gap-1 mt-1">
-                                  <Star className="w-3 h-3 fill-primary text-primary" />
-                                  <span className="text-xs">{result.rating}</span>
-                                </div>
+                            <div 
+                              key={result.id} 
+                              className="card-clean p-3 flex items-center gap-3 cursor-pointer hover:bg-secondary/50 transition-colors"
+                              onClick={() => handleShop(result.url)}
+                            >
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xl">
+                                {result.logo || '🛍️'}
                               </div>
-                              <Button
-                                size="sm"
-                                onClick={() => handleShop(result.url)}
-                              >
-                                Shop
-                                <ExternalLink className="w-3 h-3 ml-1" />
-                              </Button>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{result.store}</p>
+                                <p className="text-xs text-muted-foreground truncate">Search for {selectedItem.label}</p>
+                              </div>
+                              <ExternalLink className="w-4 h-4 text-muted-foreground" />
                             </div>
                           ))}
                         </div>

@@ -4,116 +4,118 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
+
+// Real e-commerce stores with their search URL patterns
+const stores = [
+  { 
+    name: 'Amazon', 
+    searchUrl: (q: string) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}`,
+    logo: '🛒'
+  },
+  { 
+    name: 'Flipkart', 
+    searchUrl: (q: string) => `https://www.flipkart.com/search?q=${encodeURIComponent(q)}`,
+    logo: '🛍️'
+  },
+  { 
+    name: 'Myntra', 
+    searchUrl: (q: string) => `https://www.myntra.com/${encodeURIComponent(q.toLowerCase().replace(/\s+/g, '-'))}`,
+    logo: '👗'
+  },
+  { 
+    name: 'ASOS', 
+    searchUrl: (q: string) => `https://www.asos.com/search/?q=${encodeURIComponent(q)}`,
+    logo: '✨'
+  },
+  { 
+    name: 'H&M', 
+    searchUrl: (q: string) => `https://www2.hm.com/en_us/search-results.html?q=${encodeURIComponent(q)}`,
+    logo: '🏷️'
+  },
+  { 
+    name: 'Zara', 
+    searchUrl: (q: string) => `https://www.zara.com/us/en/search?searchTerm=${encodeURIComponent(q)}`,
+    logo: '🧥'
+  },
+  { 
+    name: 'Nordstrom', 
+    searchUrl: (q: string) => `https://www.nordstrom.com/sr?keyword=${encodeURIComponent(q)}`,
+    logo: '💎'
+  },
+  { 
+    name: 'SHEIN', 
+    searchUrl: (q: string) => `https://us.shein.com/pdsearch/${encodeURIComponent(q)}`,
+    logo: '🌟'
+  },
+]
+
+// Get appropriate image URL based on category
+function getImageUrl(category: string): string {
+  const categoryLower = category.toLowerCase()
+  if (categoryLower.includes('top') || categoryLower.includes('shirt') || categoryLower.includes('blouse')) {
+    return 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300&h=400&fit=crop'
+  }
+  if (categoryLower.includes('bottom') || categoryLower.includes('pant') || categoryLower.includes('jean') || categoryLower.includes('trouser')) {
+    return 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300&h=400&fit=crop'
+  }
+  if (categoryLower.includes('dress')) {
+    return 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&h=400&fit=crop'
+  }
+  if (categoryLower.includes('jacket') || categoryLower.includes('coat') || categoryLower.includes('outerwear')) {
+    return 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=400&fit=crop'
+  }
+  if (categoryLower.includes('shoe') || categoryLower.includes('footwear') || categoryLower.includes('sneaker') || categoryLower.includes('boot')) {
+    return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=400&fit=crop'
+  }
+  return 'https://images.unsplash.com/photo-1611923134239-b9be5816e23e?w=300&h=400&fit=crop'
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { item } = await req.json();
+    const { item } = await req.json()
     
     if (!item || !item.label) {
-      throw new Error('No item provided');
+      throw new Error('No item provided')
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    console.log('Searching for products matching:', item)
 
-    console.log('Searching for products matching:', item);
+    // Build search query from item details
+    const searchTerms = [item.label]
+    if (item.color) searchTerms.push(item.color)
+    if (item.style) searchTerms.push(item.style)
+    const searchQuery = searchTerms.join(' ')
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a fashion shopping assistant. Given a clothing item description, generate realistic product search results that would match the item.
+    // Generate products with real e-commerce search links
+    const products = stores.map((store, index) => ({
+      id: Date.now() + index,
+      name: `${item.label} on ${store.name}`,
+      store: store.name,
+      logo: store.logo,
+      url: store.searchUrl(searchQuery),
+      image: getImageUrl(item.category || ''),
+      category: item.category,
+      color: item.color,
+      style: item.style,
+    }))
 
-Generate 4 products that closely match the described item. Each product should be realistic and from actual popular stores.
-
-For each product provide:
-- name: A specific product name that matches the item description (e.g., if item is "Pink Collared Shirt", provide names like "Classic Pink Oxford Shirt", "Blush Rose Button-Down", etc.)
-- price: Current sale price (realistic, between $20-$300 depending on item type)
-- originalPrice: Higher original price
-- store: Real store name (Zara, H&M, Nordstrom, ASOS, Mango, Uniqlo, Massimo Dutti, COS, & Other Stories, Everlane, J.Crew)
-- rating: Rating between 4.0 and 5.0
-- image: Use one of these Unsplash fashion image URLs based on item type:
-  - For shirts/tops: https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300&h=400&fit=crop
-  - For pants/bottoms: https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300&h=400&fit=crop
-  - For dresses: https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&h=400&fit=crop
-  - For jackets/coats: https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=400&fit=crop
-  - For shoes: https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=400&fit=crop
-  - For accessories: https://images.unsplash.com/photo-1611923134239-b9be5816e23e?w=300&h=400&fit=crop
-- url: Use store URL format like https://store.com/product
-
-Return ONLY a valid JSON array. Example:
-[
-  {"name": "Classic Pink Oxford Shirt", "price": 39.99, "originalPrice": 59.99, "store": "Uniqlo", "rating": 4.5, "image": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300&h=400&fit=crop", "url": "https://uniqlo.com/product"}
-]`
-          },
-          {
-            role: 'user',
-            content: `Find products matching this item:
-Label: ${item.label}
-Category: ${item.category}
-Color: ${item.color || 'not specified'}
-Style: ${item.style || 'not specified'}
-
-Return only the JSON array with 4 matching products.`
-          }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No response from AI');
-    }
-
-    console.log('AI response:', content);
-
-    // Parse the JSON from the response
-    let products = [];
-    try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        products = JSON.parse(jsonMatch[0]).map((p: any, index: number) => ({
-          ...p,
-          id: Date.now() + index,
-        }));
-      }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      products = [];
-    }
+    console.log('Generated product links for', stores.length, 'stores')
 
     return new Response(JSON.stringify({ products }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    })
 
   } catch (error) {
-    console.error('Error in search-products function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in search-products function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    })
   }
-});
+})
