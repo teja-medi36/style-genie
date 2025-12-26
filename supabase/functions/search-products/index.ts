@@ -6,51 +6,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Real e-commerce stores with their search URL patterns
-const stores = [
+// Shopping aggregators and stores with their search patterns
+const shoppingLinks = [
+  { 
+    name: 'Google Shopping', 
+    searchUrl: (q: string) => `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(q)}`,
+    description: 'Compare prices across all stores',
+    icon: '🔍',
+    isPrimary: true
+  },
   { 
     name: 'Amazon', 
     searchUrl: (q: string) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}`,
-    logo: '🛒'
+    description: 'Shop on Amazon',
+    icon: '📦'
   },
   { 
     name: 'Flipkart', 
     searchUrl: (q: string) => `https://www.flipkart.com/search?q=${encodeURIComponent(q)}`,
-    logo: '🛍️'
+    description: 'Shop on Flipkart',
+    icon: '🛒'
   },
   { 
     name: 'Myntra', 
     searchUrl: (q: string) => `https://www.myntra.com/${encodeURIComponent(q.toLowerCase().replace(/\s+/g, '-'))}`,
-    logo: '👗'
+    description: 'Fashion on Myntra',
+    icon: '👗'
   },
   { 
     name: 'ASOS', 
     searchUrl: (q: string) => `https://www.asos.com/search/?q=${encodeURIComponent(q)}`,
-    logo: '✨'
+    description: 'Shop on ASOS',
+    icon: '✨'
   },
   { 
     name: 'H&M', 
     searchUrl: (q: string) => `https://www2.hm.com/en_us/search-results.html?q=${encodeURIComponent(q)}`,
-    logo: '🏷️'
+    description: 'Shop on H&M',
+    icon: '🏷️'
   },
   { 
     name: 'Zara', 
     searchUrl: (q: string) => `https://www.zara.com/us/en/search?searchTerm=${encodeURIComponent(q)}`,
-    logo: '🧥'
+    description: 'Shop on Zara',
+    icon: '🧥'
   },
   { 
     name: 'Nordstrom', 
     searchUrl: (q: string) => `https://www.nordstrom.com/sr?keyword=${encodeURIComponent(q)}`,
-    logo: '💎'
+    description: 'Shop on Nordstrom',
+    icon: '💎'
   },
   { 
-    name: 'SHEIN', 
-    searchUrl: (q: string) => `https://us.shein.com/pdsearch/${encodeURIComponent(q)}`,
-    logo: '🌟'
+    name: 'eBay', 
+    searchUrl: (q: string) => `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}`,
+    description: 'Find deals on eBay',
+    icon: '🏪'
+  },
+  { 
+    name: 'Ajio', 
+    searchUrl: (q: string) => `https://www.ajio.com/search/?text=${encodeURIComponent(q)}`,
+    description: 'Shop on Ajio',
+    icon: '🎯'
   },
 ]
 
-// Get appropriate image URL based on category
+// Get appropriate placeholder image based on category
 function getImageUrl(category: string): string {
   const categoryLower = category.toLowerCase()
   if (categoryLower.includes('top') || categoryLower.includes('shirt') || categoryLower.includes('blouse')) {
@@ -85,28 +106,35 @@ serve(async (req) => {
 
     console.log('Searching for products matching:', item)
 
-    // Build search query from item details
+    // Build optimized search query
     const searchTerms = [item.label]
     if (item.color) searchTerms.push(item.color)
     if (item.style) searchTerms.push(item.style)
-    const searchQuery = searchTerms.join(' ')
+    // Add "buy" keyword to get shopping results
+    const searchQuery = `buy ${searchTerms.join(' ')}`
 
-    // Generate products with real e-commerce search links
-    const products = stores.map((store, index) => ({
+    // Generate shopping links with Google Shopping as primary for price comparison
+    const products = shoppingLinks.map((store, index) => ({
       id: Date.now() + index,
-      name: `${item.label} on ${store.name}`,
+      name: store.isPrimary ? `Compare ${item.label} prices` : `${item.label}`,
       store: store.name,
-      logo: store.logo,
+      description: store.description,
+      icon: store.icon,
       url: store.searchUrl(searchQuery),
       image: getImageUrl(item.category || ''),
       category: item.category,
       color: item.color,
       style: item.style,
+      isPrimary: store.isPrimary || false,
     }))
 
-    console.log('Generated product links for', stores.length, 'stores')
+    console.log('Generated shopping links for', shoppingLinks.length, 'stores')
 
-    return new Response(JSON.stringify({ products }), {
+    return new Response(JSON.stringify({ 
+      products,
+      searchQuery,
+      message: 'Click "Compare prices" to see deals from all stores, or shop directly on individual sites'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
