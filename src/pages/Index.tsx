@@ -3,15 +3,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Camera, Sparkles, TrendingUp, ShoppingBag, Star, Wand2 } from 'lucide-react';
-import Logo from '@/components/Logo';
+import { ArrowRight, Camera, Sparkles, Menu, Search, ShoppingBag, ChevronRight } from 'lucide-react';
 
 import fashionModel1 from '@/assets/fashion-model-1.jpg';
 import fashionModel2 from '@/assets/fashion-model-2.jpg';
 import fashionModel3 from '@/assets/fashion-model-3.jpg';
 import fashionModel4 from '@/assets/fashion-model-4.jpg';
 
-const fashionImages = [fashionModel1, fashionModel2, fashionModel3, fashionModel4];
+const categories = [
+  { name: 'Dresses', count: 124 },
+  { name: 'Tops', count: 89 },
+  { name: 'Bottoms', count: 67 },
+  { name: 'Outerwear', count: 45 },
+  { name: 'Accessories', count: 156 },
+];
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -24,226 +29,162 @@ export default function Index() {
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 hero-gradient" />
-      <div className="absolute inset-0">
-        <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-gradient-to-bl from-primary/8 via-primary/3 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
-      </div>
-
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between p-6 lg:px-16">
-        <Logo size="lg" />
-        <div className="flex items-center gap-4">
-          <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-            Sign In
-          </Link>
-          <Link to="/auth">
-            <Button variant="hero">Get Started</Button>
-          </Link>
-        </div>
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+        <Menu className="w-6 h-6 text-foreground" />
+        <h1 className="text-2xl font-display font-bold">stylesync.</h1>
+        <Link to="/auth">
+          <Search className="w-6 h-6 text-foreground" />
+        </Link>
       </nav>
 
-      {/* Hero Section */}
-      <main className="relative z-10">
-        <div className="container mx-auto px-6 pt-12 lg:pt-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-2xl"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8"
-              >
-                <Sparkles className="w-4 h-4" />
-                AI-Powered Fashion Assistant
-              </motion.div>
-
-              <h1 className="text-5xl lg:text-7xl font-display font-bold mb-8 leading-[1.1] tracking-tight">
-                Your Style,
-                <br />
-                <span className="text-gradient-gold">
-                  Perfectly Synced
-                </span>
-              </h1>
-
-              <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-lg">
-                Click on any outfit to find it instantly. AI-powered style predictions 
-                based on your unique features. Discover deals across all your favorite stores.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 mb-14">
-                <Link to="/auth">
-                  <Button variant="hero" size="xl" className="w-full sm:w-auto">
-                    Get Started Free
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Sign In
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Feature Pills */}
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-card/50 border border-border text-sm font-medium">
-                  <Camera className="w-5 h-5 text-primary" />
-                  Click to Search
-                </div>
-                <div className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-card/50 border border-border text-sm font-medium">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  AI Predictions
-                </div>
-                <div className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-card/50 border border-border text-sm font-medium">
-                  <ShoppingBag className="w-5 h-5 text-primary" />
-                  Best Deals
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right - Fashion Gallery */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="relative"
-            >
-              <div className="grid grid-cols-2 gap-5">
-                {fashionImages.map((img, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1, duration: 0.8 }}
-                    className={`relative group cursor-pointer overflow-hidden rounded-3xl aspect-[3/4] ${
-                      index === 0 ? 'lg:translate-y-8' : index === 3 ? 'lg:-translate-y-8' : ''
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <img
-                      src={img}
-                      alt={`Fashion model ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                    <div className="absolute bottom-5 left-5 right-5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Camera className="w-4 h-4" />
-                        Click items to shop
-                      </div>
-                    </div>
-                    {/* Clickable hotspots indicator */}
-                    <motion.div 
-                      className="absolute top-5 right-5 w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-gold"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <Sparkles className="w-5 h-5 text-primary-foreground" />
-                    </motion.div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 50 }}
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8 max-w-lg">
+        {/* Welcome Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="container mx-auto px-6 py-32"
+          transition={{ duration: 0.5 }}
+          className="mb-8"
         >
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-display font-bold mb-5">
-              How <span className="text-gradient-gold">StyleSync</span> Works
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Revolutionary AI technology that understands your style and helps you look your best
-            </p>
-          </div>
+          <h2 className="text-4xl font-display font-bold mb-2">
+            Discover Your
+            <br />
+            <span className="text-gradient-orange">Perfect Style</span>
+          </h2>
+          <p className="text-muted-foreground">AI-powered fashion for you</p>
+        </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <motion.div 
-              className="luxury-card p-8 rounded-3xl"
-              whileHover={{ y: -8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="w-18 h-18 rounded-3xl icon-box-lg flex items-center justify-center mb-7">
-                <Camera className="w-9 h-9 text-primary-foreground" />
-              </div>
-              <h3 className="text-2xl font-display font-bold mb-4">Visual Search</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                See an outfit you love? Click on any item to instantly find where to buy it at the best price.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              className="luxury-card p-8 rounded-3xl"
-              whileHover={{ y: -8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="w-18 h-18 rounded-3xl icon-box-lg flex items-center justify-center mb-7">
-                <Wand2 className="w-9 h-9 text-primary-foreground" />
-              </div>
-              <h3 className="text-2xl font-display font-bold mb-4">AI Style Matching</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Upload your photo and let AI analyze your features to suggest outfits that complement you perfectly.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              className="luxury-card p-8 rounded-3xl"
-              whileHover={{ y: -8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="w-18 h-18 rounded-3xl icon-box-lg flex items-center justify-center mb-7">
-                <ShoppingBag className="w-9 h-9 text-primary-foreground" />
-              </div>
-              <h3 className="text-2xl font-display font-bold mb-4">Best Deals</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Compare prices across multiple stores and never overpay for your favorite pieces again.
-              </p>
-            </motion.div>
-          </div>
-        </motion.section>
-
-        {/* Social Proof */}
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
-          className="container mx-auto px-6 pb-24"
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
         >
-          <div className="luxury-card rounded-3xl p-12 text-center">
-            <div className="flex items-center justify-center gap-1 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-6 h-6 fill-primary text-primary" />
-              ))}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="What are you looking for?"
+              className="search-input pr-12"
+            />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          </div>
+        </motion.div>
+
+        {/* Promo Banner */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="promo-banner p-8 mb-8 text-center"
+        >
+          <p className="text-4xl font-display font-bold mb-1">AI Styling</p>
+          <p className="text-xl opacity-90">Personalized for You</p>
+        </motion.div>
+
+        {/* Shop the Look */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mb-8"
+        >
+          <h3 className="text-xl font-display font-semibold mb-4">Shop the look</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="shop-card group cursor-pointer">
+              <div className="aspect-[3/4] overflow-hidden">
+                <img
+                  src={fashionModel1}
+                  alt="Fashion look"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
             </div>
-            <p className="text-2xl font-display font-semibold mb-4 max-w-2xl mx-auto">
-              "StyleSync completely changed how I shop. The AI suggestions are spot-on!"
-            </p>
-            <p className="text-muted-foreground">— 10,000+ happy users</p>
+            <div className="shop-card group cursor-pointer">
+              <div className="aspect-[3/4] overflow-hidden">
+                <img
+                  src={fashionModel2}
+                  alt="Fashion look"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            </div>
           </div>
-        </motion.section>
-      </main>
+        </motion.div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-border py-10">
-        <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          <p>© 2024 StyleSync. Your personal AI fashion assistant.</p>
-        </div>
-      </footer>
+        {/* Categories */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mb-8"
+        >
+          <h3 className="text-xl font-display font-semibold mb-4">Categories</h3>
+          <div className="space-y-3">
+            {categories.map((category, index) => (
+              <motion.div
+                key={category.name}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + index * 0.05 }}
+                className="category-item cursor-pointer"
+              >
+                <span className="font-medium">{category.name}</span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Trending Looks */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mb-8"
+        >
+          <h3 className="text-xl font-display font-semibold mb-4">Trending now</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
+            {[fashionModel3, fashionModel4, fashionModel1, fashionModel2].map((img, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 w-32 shop-card group cursor-pointer"
+              >
+                <div className="aspect-[3/4] overflow-hidden rounded-xl">
+                  <img
+                    src={img}
+                    alt={`Trending look ${index + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="text-center pb-8"
+        >
+          <Link to="/auth">
+            <Button size="lg" className="w-full rounded-full">
+              Get Started
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+          <p className="text-sm text-muted-foreground mt-4">
+            Already have an account?{' '}
+            <Link to="/auth" className="text-primary font-medium hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </motion.div>
+      </main>
     </div>
   );
 }

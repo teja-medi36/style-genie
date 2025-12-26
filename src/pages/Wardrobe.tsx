@@ -25,10 +25,7 @@ import {
   Shirt, 
   Trash2, 
   Heart,
-  Filter,
-  Grid,
-  List,
-  Package
+  ChevronRight
 } from 'lucide-react';
 
 interface WardrobeItem {
@@ -79,7 +76,6 @@ export default function Wardrobe() {
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   
   const [formData, setFormData] = useState({
@@ -170,198 +166,175 @@ export default function Wardrobe() {
 
   return (
     <AppLayout>
-      <div className="relative min-h-full">
-        <div className="absolute inset-0 hero-gradient pointer-events-none" />
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative space-y-8"
-        >
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl icon-box-lg flex items-center justify-center">
-                  <Package className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <span className="text-primary text-sm font-semibold tracking-wider uppercase">
-                  My Collection
-                </span>
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-display font-bold tracking-tight">
-                My <span className="text-gradient-gold">Wardrobe</span>
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                {items.length} items in your collection
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-3 flex-wrap">
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-44 bg-secondary/50 border-border/50">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent className="glass-panel">
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <div className="flex rounded-xl border border-border overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-3 transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 hover:bg-secondary'}`}
-                >
-                  <Grid className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-3 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 hover:bg-secondary'}`}
-                >
-                  <List className="w-5 h-5" />
-                </button>
-              </div>
-
-              <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="hero" size="lg">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add Item
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="luxury-card border-0">
-                  <DialogHeader>
-                    <DialogTitle className="font-display text-3xl">Add to Wardrobe</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-                    <Input
-                      placeholder="Item name (e.g., Blue Oxford Shirt)"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="h-12 bg-secondary/50 border-border/50"
-                    />
-                    
-                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                      <SelectTrigger className="h-12 bg-secondary/50 border-border/50">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="glass-panel">
-                        {categories.map(cat => (
-                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={formData.color} onValueChange={(v) => setFormData({ ...formData, color: v })}>
-                      <SelectTrigger className="h-12 bg-secondary/50 border-border/50">
-                        <SelectValue placeholder="Select color" />
-                      </SelectTrigger>
-                      <SelectContent className="glass-panel">
-                        {colors.map(color => (
-                          <SelectItem key={color} value={color}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full ${colorClasses[color]}`} />
-                              {color}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        placeholder="Brand (optional)"
-                        value={formData.brand}
-                        onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                        className="h-12 bg-secondary/50 border-border/50"
-                      />
-                      <Input
-                        placeholder="Size (optional)"
-                        value={formData.size}
-                        onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                        className="h-12 bg-secondary/50 border-border/50"
-                      />
-                    </div>
-
-                    <Button type="submit" variant="hero" className="w-full h-12">
-                      Add to Wardrobe
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold">
+              My <span className="text-gradient-orange">Wardrobe</span>
+            </h1>
+            <p className="text-muted-foreground">{items.length} items</p>
           </div>
-
-          {/* Items Grid */}
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="luxury-card rounded-3xl p-16 text-center">
-              <div className="w-24 h-24 rounded-3xl icon-box mx-auto mb-6 flex items-center justify-center">
-                <Shirt className="w-12 h-12 text-primary" />
-              </div>
-              <h3 className="text-2xl font-display font-bold mb-3">Your wardrobe is empty</h3>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Start adding your clothes to get personalized outfit suggestions from our AI stylist
-              </p>
-              <Button variant="hero" size="lg" onClick={() => setIsOpen(true)}>
-                <Plus className="w-5 h-5 mr-2" />
-                Add Your First Item
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-5 h-5 mr-1" />
+                Add
               </Button>
-            </div>
-          ) : (
-            <motion.div
-              className={viewMode === 'grid' 
-                ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
-                : "space-y-4"
-              }
-            >
-              <AnimatePresence>
-                {filteredItems.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.03 }}
-                  >
-                    <div className={`stat-card group overflow-hidden rounded-2xl ${viewMode === 'list' ? 'flex items-center' : ''}`}>
-                      <div className={`${viewMode === 'grid' ? 'aspect-square' : 'w-24 h-24 flex-shrink-0'} bg-secondary/50 flex items-center justify-center relative`}>
-                        <div className={`w-16 h-16 rounded-xl ${colorClasses[item.color] || 'bg-muted'} shadow-lg`} />
-                        <button
-                          onClick={() => toggleFavorite(item.id, item.is_favorite)}
-                          className="absolute top-3 right-3 p-2 rounded-full bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-background/80"
-                        >
-                          <Heart className={`w-4 h-4 ${item.is_favorite ? 'fill-primary text-primary' : 'text-foreground'}`} />
-                        </button>
-                      </div>
-                      <div className={`${viewMode === 'grid' ? 'p-4' : 'flex-1 flex items-center justify-between p-4'}`}>
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">{item.name}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{item.category} · {item.color}</p>
-                          {item.brand && <p className="text-xs text-muted-foreground mt-1">{item.brand}</p>}
+            </DialogTrigger>
+            <DialogContent className="card-elevated border-0">
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl">Add Item</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <Input
+                  placeholder="Item name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="h-12"
+                />
+                
+                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={formData.color} onValueChange={(v) => setFormData({ ...formData, color: v })}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colors.map(color => (
+                      <SelectItem key={color} value={color}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-4 h-4 rounded-full ${colorClasses[color]}`} />
+                          {color}
                         </div>
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className={`${viewMode === 'grid' ? 'mt-3' : 'ml-4'} p-2.5 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    placeholder="Brand"
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                    className="h-12"
+                  />
+                  <Input
+                    placeholder="Size"
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    className="h-12"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full h-12">
+                  Add to Wardrobe
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
+          <button
+            onClick={() => setFilterCategory('all')}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              filterCategory === 'all' 
+                ? 'bg-foreground text-background' 
+                : 'bg-secondary text-muted-foreground'
+            }`}
+          >
+            All
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setFilterCategory(cat.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                filterCategory === cat.value 
+                  ? 'bg-foreground text-background' 
+                  : 'bg-secondary text-muted-foreground'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Items */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="card-clean text-center p-8">
+            <div className="icon-circle mx-auto mb-4">
+              <Shirt className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <p className="font-medium mb-1">No items yet</p>
+            <p className="text-sm text-muted-foreground mb-4">Add your clothes to get started</p>
+            <Button onClick={() => setIsOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Add Item
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <AnimatePresence>
+              {filteredItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <div className="category-item group">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl ${colorClasses[item.color] || 'bg-muted'}`} />
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {item.category} · {item.color}
+                          {item.brand && ` · ${item.brand}`}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </motion.div>
-      </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleFavorite(item.id, item.is_favorite)}
+                        className="p-2 rounded-full hover:bg-secondary transition-colors"
+                      >
+                        <Heart className={`w-4 h-4 ${item.is_favorite ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
+                      </button>
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        className="p-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </motion.div>
     </AppLayout>
   );
 }
