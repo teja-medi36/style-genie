@@ -27,45 +27,36 @@ serve(async (req) => {
       ? `Body type: ${profile.body_type || 'not specified'}, Skin tone: ${profile.skin_tone || 'not specified'}, Hair color: ${profile.hair_color || 'not specified'}, Hair style: ${profile.hair_style || 'not specified'}, Style preference: ${profile.style_preference || 'not specified'}, Preferred colors: ${profile.preferred_colors?.join(', ') || 'not specified'}`
       : 'No profile information available';
 
-    const systemPrompt = `You are StyleAI, an expert fashion stylist AI. Your role is to suggest perfect outfit combinations based on the user's profile, wardrobe, and occasion. Be specific, creative, and explain why each piece works together.
+    const systemPrompt = `You are StyleAI, an expert fashion stylist AI. Your role is to suggest perfect outfit combinations based on the user's profile, wardrobe, and occasion. Be specific about colors, styles, and brands.
 
 Always respond with a JSON object in this exact format:
 {
   "outfit": {
-    "top": "description of top/shirt suggestion",
-    "bottom": "description of pants/skirt suggestion", 
-    "outerwear": "description of jacket/coat if needed, or null",
-    "shoes": "description of shoe suggestion",
-    "accessories": "description of accessories if any, or null"
+    "top": "specific description with color and style",
+    "bottom": "specific description with color and style", 
+    "outerwear": "description or null if not needed",
+    "shoes": "specific description with color and style",
+    "accessories": "description or null"
   },
-  "explanation": "A brief, friendly explanation of why this outfit works for the occasion and the person's style",
+  "explanation": "Brief friendly explanation of why this outfit works",
   "styling_tips": ["tip 1", "tip 2", "tip 3"],
-  "color_harmony": "explanation of how the colors complement each other and the person's features",
-  "alternatives": {
-    "top": "alternative top option",
-    "bottom": "alternative bottom option"
-  }
+  "color_harmony": "explanation of color coordination",
+  "image_prompt": "A detailed fashion photography prompt describing a complete outfit: [describe the full outfit as it would look on a fashion mannequin or flat lay, include all colors, textures, and style details]"
 }`;
 
-    const userPrompt = `Please suggest an outfit for the following:
+    const userPrompt = `Please suggest an outfit for: ${occasion || 'casual everyday'}
 
-OCCASION: ${occasion || 'casual everyday'}
-
-USER PROFILE:
-${profileDescription}
-
-AVAILABLE WARDROBE ITEMS:
-${wardrobeDescription}
+USER PROFILE: ${profileDescription}
+WARDROBE: ${wardrobeDescription}
 
 ${wardrobe && wardrobe.length > 0 
-  ? 'Please prioritize items from my wardrobe when possible, but also suggest items I might want to add.'
-  : 'Since my wardrobe is empty, please suggest items I should consider purchasing.'}
-
-Provide a complete outfit suggestion with explanations.`;
+  ? 'Prioritize items from my wardrobe when possible.'
+  : 'Suggest items I should consider purchasing.'}`;
 
     console.log('Calling AI gateway for outfit suggestion...');
     
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Step 1: Get outfit text suggestion
+    const textResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -80,40 +71,38 @@ Provide a complete outfit suggestion with explanations.`;
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+    if (!textResponse.ok) {
+      const errorText = await textResponse.text();
+      console.error('AI gateway error:', textResponse.status, errorText);
       
-      if (response.status === 429) {
+      if (textResponse.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
+      if (textResponse.status === 402) {
         return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`AI gateway error: ${textResponse.status}`);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const textData = await textResponse.json();
+    const content = textData.choices?.[0]?.message?.content;
     
-    console.log('AI response received:', content?.substring(0, 200));
+    console.log('AI text response received');
 
     // Parse the JSON response
     let suggestion;
     try {
-      // Extract JSON from potential markdown code blocks
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
       const jsonStr = jsonMatch ? jsonMatch[1] : content;
       suggestion = JSON.parse(jsonStr.trim());
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
-      // Return a structured fallback based on the text response
       suggestion = {
         outfit: {
           top: "Classic white button-down shirt",
@@ -125,12 +114,53 @@ Provide a complete outfit suggestion with explanations.`;
         explanation: content || "A timeless combination that works for most occasions.",
         styling_tips: ["Keep accessories minimal", "Ensure proper fit", "Iron clothes for a crisp look"],
         color_harmony: "Navy and white is a classic pairing that suits most skin tones.",
-        alternatives: {
-          top: "Light blue oxford shirt",
-          bottom: "Dark gray trousers"
-        }
+        image_prompt: "Fashion flat lay photography of a complete outfit: white button-down shirt, navy blue chinos, brown leather loafers, and a leather watch, arranged elegantly on a neutral background"
       };
     }
+
+    // Step 2: Generate outfit image
+    let outfitImage = null;
+    try {
+      const imagePrompt = suggestion.image_prompt || 
+        `Fashion photography flat lay of a complete ${occasion} outfit: ${suggestion.outfit.top}, ${suggestion.outfit.bottom}, ${suggestion.outfit.shoes}${suggestion.outfit.outerwear ? ', ' + suggestion.outfit.outerwear : ''}${suggestion.outfit.accessories ? ', ' + suggestion.outfit.accessories : ''}, styled professionally on a clean background, high-end fashion editorial style`;
+
+      console.log('Generating outfit image...');
+      
+      const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: [
+            { 
+              role: 'user', 
+              content: `Generate a high-quality fashion flat lay image: ${imagePrompt}. Make it look like a professional fashion magazine photoshoot with clean styling.`
+            }
+          ],
+          modalities: ['image', 'text']
+        }),
+      });
+
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageUrl) {
+          outfitImage = imageUrl;
+          console.log('Outfit image generated successfully');
+        }
+      } else {
+        console.error('Image generation failed:', await imageResponse.text());
+      }
+    } catch (imageError) {
+      console.error('Error generating outfit image:', imageError);
+      // Continue without image - not critical
+    }
+
+    // Add image to suggestion
+    suggestion.outfit_image = outfitImage;
 
     return new Response(JSON.stringify({ suggestion }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -7,12 +7,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Sparkles, 
-  Shirt, 
   RefreshCw,
   Save,
   Lightbulb,
   Palette,
-  ChevronRight
+  ChevronRight,
+  ImageIcon
 } from 'lucide-react';
 
 interface OutfitSuggestion {
@@ -30,6 +30,7 @@ interface OutfitSuggestion {
     top: string;
     bottom: string;
   };
+  outfit_image?: string | null;
 }
 
 const occasions = [
@@ -129,7 +130,7 @@ export default function GetStyled() {
           <h1 className="text-3xl font-display font-bold mb-2">
             AI <span className="text-gradient-orange">Style Assistant</span>
           </h1>
-          <p className="text-muted-foreground">Get personalized outfit recommendations</p>
+          <p className="text-muted-foreground">Get personalized outfit recommendations with images</p>
         </div>
 
         {/* Occasion Selector */}
@@ -159,7 +160,10 @@ export default function GetStyled() {
             size="lg"
           >
             {loading ? (
-              <RefreshCw className="w-5 h-5 animate-spin" />
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                Generating...
+              </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5 mr-2" />
@@ -173,24 +177,65 @@ export default function GetStyled() {
         {loading && (
           <div className="flex flex-col items-center py-12">
             <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="mt-4 text-muted-foreground">Crafting your outfit...</p>
+            <p className="mt-4 text-muted-foreground">Creating your outfit with AI image...</p>
+            <p className="text-sm text-muted-foreground/60 mt-1">This may take a moment</p>
           </div>
         )}
 
         {/* Result */}
         {suggestion && !loading && (
-          <div className="space-y-6 max-w-lg mx-auto">
-            {/* Outfit Card */}
-            <div className="card-elevated overflow-hidden">
-              <div className="promo-banner p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shirt className="w-5 h-5" />
-                  <span className="font-semibold">Your Outfit</span>
+          <div className="space-y-6 max-w-2xl mx-auto">
+            {/* Outfit Image - Hero */}
+            {suggestion.outfit_image && (
+              <div className="card-elevated overflow-hidden">
+                <div className="aspect-square md:aspect-[4/3] relative bg-secondary">
+                  <img 
+                    src={suggestion.outfit_image} 
+                    alt="AI Generated Outfit" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <Button 
+                      size="sm" 
+                      onClick={saveOutfit}
+                      className="bg-white/90 hover:bg-white text-foreground shadow-lg"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save Look
+                    </Button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                    <p className="text-white font-display text-xl font-semibold">
+                      Your {occasions.find(o => o.value === occasion)?.label} Outfit
+                    </p>
+                  </div>
                 </div>
-                <Button variant="secondary" size="sm" onClick={saveOutfit} className="bg-white/20 hover:bg-white/30 text-white border-0">
+              </div>
+            )}
+
+            {/* No Image Fallback */}
+            {!suggestion.outfit_image && (
+              <div className="card-elevated p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+                  <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground">Image generation unavailable</p>
+                <Button 
+                  size="sm" 
+                  onClick={saveOutfit}
+                  className="mt-4"
+                  variant="outline"
+                >
                   <Save className="w-4 h-4 mr-1" />
-                  Save
+                  Save Look
                 </Button>
+              </div>
+            )}
+
+            {/* Outfit Details */}
+            <div className="card-elevated overflow-hidden">
+              <div className="promo-banner p-4">
+                <span className="font-semibold">Outfit Details</span>
               </div>
               <div className="p-4 space-y-3">
                 {[
@@ -216,37 +261,40 @@ export default function GetStyled() {
               <p className="text-muted-foreground leading-relaxed">{suggestion.explanation}</p>
             </div>
 
-            {/* Tips */}
-            <div className="card-clean p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">Styling Tips</span>
+            {/* Tips & Color Harmony Grid */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Tips */}
+              <div className="card-clean p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                  <span className="font-semibold text-sm">Styling Tips</span>
+                </div>
+                <ul className="space-y-2">
+                  {suggestion.styling_tips.map((tip, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0">
+                        {index + 1}
+                      </span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-2">
-                {suggestion.styling_tips.map((tip, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0">
-                      {index + 1}
-                    </span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            {/* Color Harmony */}
-            <div className="card-clean p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Palette className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">Color Harmony</span>
+              {/* Color Harmony */}
+              <div className="card-clean p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Palette className="w-4 h-4 text-primary" />
+                  <span className="font-semibold text-sm">Color Harmony</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{suggestion.color_harmony}</p>
               </div>
-              <p className="text-sm text-muted-foreground">{suggestion.color_harmony}</p>
             </div>
 
             {/* Regenerate */}
             <Button variant="outline" className="w-full" onClick={generateOutfit} disabled={loading}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Generate Another
+              Generate Another Look
             </Button>
           </div>
         )}
@@ -259,7 +307,7 @@ export default function GetStyled() {
             </div>
             <p className="font-medium mb-1">Ready to get styled?</p>
             <p className="text-sm text-muted-foreground">
-              Select an occasion and tap Generate
+              Select an occasion and tap Generate to see your AI-created outfit
             </p>
           </div>
         )}
