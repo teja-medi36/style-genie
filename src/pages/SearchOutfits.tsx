@@ -86,7 +86,7 @@ const defaultLookbooks: Lookbook[] = [
   },
 ];
 
-const mockSearchResults: Record<string, Array<{
+interface ProductResult {
   id: number;
   name: string;
   price: number;
@@ -95,28 +95,13 @@ const mockSearchResults: Record<string, Array<{
   rating: number;
   image: string;
   url: string;
-}>> = {
-  'Camel Trench Coat': [
-    { id: 1, name: 'Classic Camel Trench Coat', price: 149.99, originalPrice: 249.99, store: 'Zara', rating: 4.6, image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=400&fit=crop', url: 'https://zara.com' },
-    { id: 2, name: 'Wool Blend Camel Coat', price: 199.99, originalPrice: 299.99, store: 'H&M', rating: 4.4, image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=300&h=400&fit=crop', url: 'https://hm.com' },
-  ],
-  'Sage Crop Top': [
-    { id: 3, name: 'Ribbed Sage Crop Top', price: 24.99, originalPrice: 39.99, store: 'Forever 21', rating: 4.2, image: 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=300&h=400&fit=crop', url: 'https://forever21.com' },
-    { id: 4, name: 'Seamless Sage Bralette', price: 29.99, originalPrice: 44.99, store: 'Aritzia', rating: 4.7, image: 'https://images.unsplash.com/photo-1564557287817-3785e38ec1f5?w=300&h=400&fit=crop', url: 'https://aritzia.com' },
-  ],
-};
-
-const getDefaultResults = (itemName: string, category: string) => [
-  { id: 100, name: `${itemName} - Best Match`, price: 59.99, originalPrice: 89.99, store: 'Nordstrom', rating: 4.3, image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=300&h=400&fit=crop', url: 'https://nordstrom.com' },
-  { id: 101, name: `Similar ${category} Item`, price: 44.99, originalPrice: 69.99, store: 'ASOS', rating: 4.1, image: 'https://images.unsplash.com/photo-1467043237213-65f2da53396f?w=300&h=400&fit=crop', url: 'https://asos.com' },
-  { id: 102, name: `${category} Alternative`, price: 79.99, originalPrice: 119.99, store: 'Zara', rating: 4.5, image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=400&fit=crop', url: 'https://zara.com' },
-];
+}
 
 export default function SearchOutfits() {
   const [lookbooks, setLookbooks] = useState<Lookbook[]>(defaultLookbooks);
   const [selectedLook, setSelectedLook] = useState<Lookbook | null>(null);
   const [selectedItem, setSelectedItem] = useState<{ label: string; category: string } | null>(null);
-  const [searchResults, setSearchResults] = useState<typeof mockSearchResults[string]>([]);
+  const [searchResults, setSearchResults] = useState<ProductResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -197,15 +182,39 @@ export default function SearchOutfits() {
     }
   };
 
-  const handleHotspotClick = (hotspot: { label: string; category: string }) => {
+  const handleHotspotClick = async (hotspot: DetectedItem) => {
     setLoading(true);
     setSelectedItem(hotspot);
     
-    setTimeout(() => {
-      const results = mockSearchResults[hotspot.label] || getDefaultResults(hotspot.label, hotspot.category);
-      setSearchResults(results);
+    try {
+      const { data, error } = await supabase.functions.invoke('search-products', {
+        body: { 
+          item: {
+            label: hotspot.label,
+            category: hotspot.category,
+            color: hotspot.color,
+            style: hotspot.style,
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Search error:', error);
+        toast.error('Failed to search for products');
+        setSearchResults([]);
+      } else {
+        setSearchResults(data.products || []);
+        if (data.products?.length === 0) {
+          toast.info('No products found for this item');
+        }
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      toast.error('Failed to search for products');
+      setSearchResults([]);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   const handleShop = (url: string) => {
