@@ -7,7 +7,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.suggest-outfit]
-verify_jwt = true
+verify_jwt = false
 
 [functions.search-products]
 verify_jwt = false
