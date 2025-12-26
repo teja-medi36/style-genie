@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { 
@@ -41,33 +40,26 @@ export default function Sidebar() {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-2xl glass-panel hover:border-primary/30 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors"
       >
         <Menu className="w-6 h-6 text-foreground" />
       </button>
 
       {/* Mobile overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsOpen(false)}
-            className="lg:hidden fixed inset-0 bg-background/90 backdrop-blur-xl z-40"
-          />
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+        />
+      )}
 
       {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ x: isOpen ? 0 : undefined }}
+      <aside
         className={cn(
           "fixed lg:static inset-y-0 left-0 z-50 w-72",
           "bg-sidebar border-r border-sidebar-border p-6 flex flex-col",
-          "transform -translate-x-full lg:translate-x-0 transition-transform duration-300",
-          isOpen && "translate-x-0"
+          "transform transition-transform duration-300",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Close button - mobile */}
@@ -94,7 +86,7 @@ export default function Sidebar() {
               to={item.path}
               onClick={() => setIsOpen(false)}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+                "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 group relative",
                 isActive 
                   ? "bg-primary/10 text-primary border border-primary/20" 
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -103,11 +95,7 @@ export default function Sidebar() {
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className="absolute left-0 w-1 h-8 rounded-r-full bg-primary"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
+                    <div className="absolute left-0 w-1 h-8 rounded-r-full bg-primary" />
                   )}
                   <div className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
@@ -137,7 +125,7 @@ export default function Sidebar() {
             Sign Out
           </Button>
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }
