@@ -90,12 +90,14 @@ interface ProductResult {
   id: number;
   name: string;
   store: string;
-  logo?: string;
+  description?: string;
+  icon?: string;
   url: string;
   image: string;
   category?: string;
   color?: string;
   style?: string;
+  isPrimary?: boolean;
 }
 
 export default function SearchOutfits() {
@@ -400,18 +402,41 @@ export default function SearchOutfits() {
                           </button>
                         </div>
                         <div className="space-y-2">
-                          {searchResults.map((result) => (
+                          {/* Primary option (Google Shopping) first */}
+                          {searchResults.filter(r => r.isPrimary).map((result) => (
+                            <div 
+                              key={result.id} 
+                              className="card-clean p-4 cursor-pointer bg-primary/10 border-2 border-primary hover:bg-primary/20 transition-colors"
+                              onClick={() => handleShop(result.url)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-2xl">
+                                  {result.icon || '🔍'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold">{result.name}</p>
+                                  <p className="text-sm text-muted-foreground">{result.description}</p>
+                                </div>
+                                <ExternalLink className="w-5 h-5 text-primary" />
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <p className="text-xs text-muted-foreground pt-2 pb-1">Or shop directly on:</p>
+                          
+                          {/* Other stores */}
+                          {searchResults.filter(r => !r.isPrimary).map((result) => (
                             <div 
                               key={result.id} 
                               className="card-clean p-3 flex items-center gap-3 cursor-pointer hover:bg-secondary/50 transition-colors"
                               onClick={() => handleShop(result.url)}
                             >
                               <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xl">
-                                {result.logo || '🛍️'}
+                                {result.icon || '🛍️'}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm">{result.store}</p>
-                                <p className="text-xs text-muted-foreground truncate">Search for {selectedItem.label}</p>
+                                <p className="text-xs text-muted-foreground truncate">{result.description}</p>
                               </div>
                               <ExternalLink className="w-4 h-4 text-muted-foreground" />
                             </div>
