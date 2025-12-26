@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +13,9 @@ import {
   Save,
   Lightbulb,
   Palette,
-  ShoppingBag
+  ShoppingBag,
+  Wand2,
+  ArrowRight
 } from 'lucide-react';
 
 interface OutfitSuggestion {
@@ -35,13 +36,13 @@ interface OutfitSuggestion {
 }
 
 const occasions = [
-  { value: 'casual', label: 'Casual Day Out' },
-  { value: 'work', label: 'Work / Office' },
-  { value: 'date', label: 'Date Night' },
-  { value: 'party', label: 'Party / Event' },
-  { value: 'sport', label: 'Sports / Active' },
-  { value: 'formal', label: 'Formal / Business' },
-  { value: 'weekend', label: 'Weekend Brunch' },
+  { value: 'casual', label: 'Casual Day Out', icon: '☕' },
+  { value: 'work', label: 'Work / Office', icon: '💼' },
+  { value: 'date', label: 'Date Night', icon: '✨' },
+  { value: 'party', label: 'Party / Event', icon: '🎉' },
+  { value: 'sport', label: 'Sports / Active', icon: '🏃' },
+  { value: 'formal', label: 'Formal / Business', icon: '👔' },
+  { value: 'weekend', label: 'Weekend Brunch', icon: '🥐' },
 ];
 
 export default function GetStyled() {
@@ -144,229 +145,257 @@ export default function GetStyled() {
 
   return (
     <AppLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-8"
-      >
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200 }}
-            className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-accent mx-auto mb-6 flex items-center justify-center shadow-[0_4px_30px_-5px_hsla(38,92%,50%,0.4)]"
-          >
-            <Sparkles className="w-10 h-10 text-primary-foreground" />
-          </motion.div>
-          <h1 className="text-4xl font-display font-bold mb-3">AI Style Assistant</h1>
-          <p className="text-muted-foreground text-lg">
-            Get personalized outfit recommendations based on your style profile and wardrobe
-          </p>
-        </div>
-
-        {/* Occasion Selector */}
-        <Card variant="glass" className="max-w-xl mx-auto">
-          <CardContent className="p-6">
-            <label className="block text-sm font-medium mb-3">What's the occasion?</label>
-            <div className="flex gap-3">
-              <Select value={occasion} onValueChange={setOccasion}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select occasion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {occasions.map(occ => (
-                    <SelectItem key={occ.value} value={occ.value}>{occ.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="gold" 
-                onClick={generateOutfit}
-                disabled={loading}
-                className="min-w-[140px]"
-              >
-                {loading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Generate
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-              <Sparkles className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <p className="mt-6 text-muted-foreground animate-pulse">Crafting your perfect outfit...</p>
+      <div className="relative min-h-full">
+        <div className="absolute inset-0 hero-gradient pointer-events-none" />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative space-y-10"
+        >
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="w-24 h-24 rounded-3xl icon-box-lg mx-auto mb-8 flex items-center justify-center animate-glow"
+            >
+              <Wand2 className="w-12 h-12 text-primary-foreground" />
+            </motion.div>
+            <h1 className="text-5xl lg:text-6xl font-display font-bold mb-4 tracking-tight">
+              AI <span className="text-gradient-gold">Style Assistant</span>
+            </h1>
+            <p className="text-muted-foreground text-xl max-w-xl mx-auto">
+              Get personalized outfit recommendations crafted just for you
+            </p>
           </div>
-        )}
 
-        {/* Suggestion Result */}
-        {suggestion && !loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6"
-          >
-            {/* Main Outfit Card */}
-            <Card variant="elevated" className="overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-display font-bold">Your Outfit</h2>
-                  <Button variant="gold" size="sm" onClick={saveOutfit}>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Look
+          {/* Occasion Selector */}
+          <div className="max-w-2xl mx-auto">
+            <div className="luxury-card rounded-3xl p-1">
+              <div className="rounded-[22px] p-8">
+                <label className="block text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
+                  What's the occasion?
+                </label>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Select value={occasion} onValueChange={setOccasion}>
+                    <SelectTrigger className="flex-1 h-14 text-lg bg-secondary/50 border-border/50">
+                      <SelectValue placeholder="Select occasion" />
+                    </SelectTrigger>
+                    <SelectContent className="glass-panel">
+                      {occasions.map(occ => (
+                        <SelectItem key={occ.value} value={occ.value} className="text-base">
+                          <span className="flex items-center gap-3">
+                            <span>{occ.icon}</span>
+                            <span>{occ.label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="hero" 
+                    size="xl"
+                    onClick={generateOutfit}
+                    disabled={loading}
+                    className="min-w-[180px]"
+                  >
+                    {loading ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Generate
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
-              <CardContent className="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Top */}
-                <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shirt className="w-5 h-5 text-primary" />
-                    <span className="font-medium">Top</span>
-                  </div>
-                  <p className="text-muted-foreground">{suggestion.outfit.top}</p>
-                </div>
+            </div>
+          </div>
 
-                {/* Bottom */}
-                <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shirt className="w-5 h-5 text-primary" />
-                    <span className="font-medium">Bottom</span>
-                  </div>
-                  <p className="text-muted-foreground">{suggestion.outfit.bottom}</p>
+          {/* Loading State */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="w-10 h-10 text-primary animate-pulse" />
                 </div>
+              </div>
+              <p className="mt-8 text-xl text-muted-foreground">Crafting your perfect outfit...</p>
+            </div>
+          )}
 
-                {/* Shoes */}
-                <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShoppingBag className="w-5 h-5 text-primary" />
-                    <span className="font-medium">Shoes</span>
-                  </div>
-                  <p className="text-muted-foreground">{suggestion.outfit.shoes}</p>
-                </div>
-
-                {/* Outerwear */}
-                {suggestion.outfit.outerwear && (
-                  <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shirt className="w-5 h-5 text-primary" />
-                      <span className="font-medium">Outerwear</span>
+          {/* Suggestion Result */}
+          {suggestion && !loading && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="space-y-8"
+            >
+              {/* Main Outfit Card */}
+              <div className="luxury-card rounded-3xl overflow-hidden">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 lg:p-8 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl icon-box-lg flex items-center justify-center">
+                      <Shirt className="w-7 h-7 text-primary-foreground" />
                     </div>
-                    <p className="text-muted-foreground">{suggestion.outfit.outerwear}</p>
+                    <h2 className="text-3xl font-display font-bold">Your Outfit</h2>
                   </div>
-                )}
-
-                {/* Accessories */}
-                {suggestion.outfit.accessories && (
-                  <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-5 h-5 text-primary" />
-                      <span className="font-medium">Accessories</span>
+                  <Button variant="gold" size="lg" onClick={saveOutfit}>
+                    <Save className="w-5 h-5 mr-2" />
+                    Save Look
+                  </Button>
+                </div>
+                <div className="p-6 lg:p-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Top */}
+                  <div className="stat-card p-5 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl icon-box flex items-center justify-center">
+                        <Shirt className="w-5 h-5 text-primary" />
+                      </div>
+                      <span className="font-semibold">Top</span>
                     </div>
-                    <p className="text-muted-foreground">{suggestion.outfit.accessories}</p>
+                    <p className="text-muted-foreground">{suggestion.outfit.top}</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
 
-            {/* Explanation */}
-            <Card variant="glass">
-              <CardContent className="p-6">
-                <p className="text-lg leading-relaxed">{suggestion.explanation}</p>
-              </CardContent>
-            </Card>
+                  {/* Bottom */}
+                  <div className="stat-card p-5 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl icon-box flex items-center justify-center">
+                        <Shirt className="w-5 h-5 text-primary" />
+                      </div>
+                      <span className="font-semibold">Bottom</span>
+                    </div>
+                    <p className="text-muted-foreground">{suggestion.outfit.bottom}</p>
+                  </div>
 
-            {/* Tips & Color Harmony */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Lightbulb className="w-5 h-5 text-primary" />
-                    Styling Tips
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
+                  {/* Shoes */}
+                  <div className="stat-card p-5 rounded-2xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl icon-box flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-primary" />
+                      </div>
+                      <span className="font-semibold">Shoes</span>
+                    </div>
+                    <p className="text-muted-foreground">{suggestion.outfit.shoes}</p>
+                  </div>
+
+                  {/* Outerwear */}
+                  {suggestion.outfit.outerwear && (
+                    <div className="stat-card p-5 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-10 h-10 rounded-xl icon-box flex items-center justify-center">
+                          <Shirt className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="font-semibold">Outerwear</span>
+                      </div>
+                      <p className="text-muted-foreground">{suggestion.outfit.outerwear}</p>
+                    </div>
+                  )}
+
+                  {/* Accessories */}
+                  {suggestion.outfit.accessories && (
+                    <div className="stat-card p-5 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-10 h-10 rounded-xl icon-box flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="font-semibold">Accessories</span>
+                      </div>
+                      <p className="text-muted-foreground">{suggestion.outfit.accessories}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Explanation */}
+              <div className="luxury-card rounded-3xl p-8">
+                <p className="text-xl leading-relaxed text-foreground/90">{suggestion.explanation}</p>
+              </div>
+
+              {/* Tips & Color Harmony */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="luxury-card rounded-3xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-2xl icon-box flex items-center justify-center">
+                      <Lightbulb className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-display font-bold">Styling Tips</h3>
+                  </div>
+                  <ul className="space-y-4">
                     {suggestion.styling_tips.map((tip, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <li key={index} className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-sm flex items-center justify-center flex-shrink-0 font-medium">
                           {index + 1}
                         </span>
                         <span className="text-muted-foreground">{tip}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
-              </Card>
-
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Palette className="w-5 h-5 text-primary" />
-                    Color Harmony
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{suggestion.color_harmony}</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Alternatives */}
-            <Card variant="glass">
-              <CardHeader>
-                <CardTitle className="text-lg">Alternative Options</CardTitle>
-              </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <span className="text-sm text-muted-foreground">Alternative Top:</span>
-                  <p className="font-medium">{suggestion.alternatives.top}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">Alternative Bottom:</span>
-                  <p className="font-medium">{suggestion.alternatives.bottom}</p>
+
+                <div className="luxury-card rounded-3xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-2xl icon-box flex items-center justify-center">
+                      <Palette className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-display font-bold">Color Harmony</h3>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">{suggestion.color_harmony}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Regenerate Button */}
-            <div className="text-center">
-              <Button variant="outline" onClick={generateOutfit} disabled={loading}>
-                <RefreshCw className="w-5 h-5 mr-2" />
-                Generate Another Look
-              </Button>
+              {/* Alternatives */}
+              <div className="luxury-card rounded-3xl p-6">
+                <h3 className="text-xl font-display font-bold mb-6">Alternative Options</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="stat-card p-5 rounded-2xl">
+                    <span className="text-sm text-muted-foreground uppercase tracking-wider">Alternative Top</span>
+                    <p className="font-semibold mt-2">{suggestion.alternatives.top}</p>
+                  </div>
+                  <div className="stat-card p-5 rounded-2xl">
+                    <span className="text-sm text-muted-foreground uppercase tracking-wider">Alternative Bottom</span>
+                    <p className="font-semibold mt-2">{suggestion.alternatives.bottom}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Regenerate Button */}
+              <div className="text-center pt-4">
+                <Button variant="outline" size="lg" onClick={generateOutfit} disabled={loading}>
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Generate Another Look
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Empty State */}
+          {!suggestion && !loading && (
+            <div className="max-w-2xl mx-auto">
+              <div className="luxury-card rounded-3xl text-center p-12">
+                <div className="w-20 h-20 rounded-3xl icon-box mx-auto mb-6 flex items-center justify-center">
+                  <Sparkles className="w-10 h-10 text-primary" />
+                </div>
+                <h3 className="text-2xl font-display font-bold mb-3">Ready to get styled?</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Select an occasion and click Generate to get AI-powered outfit suggestions tailored just for you.
+                </p>
+                {wardrobe.length === 0 && (
+                  <p className="text-sm text-primary flex items-center justify-center gap-2">
+                    <ArrowRight className="w-4 h-4" />
+                    Add items to your wardrobe for more personalized suggestions
+                  </p>
+                )}
+              </div>
             </div>
-          </motion.div>
-        )}
-
-        {/* Empty State */}
-        {!suggestion && !loading && (
-          <Card variant="glass" className="max-w-xl mx-auto text-center p-12">
-            <Sparkles className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-display font-semibold mb-2">Ready to get styled?</h3>
-            <p className="text-muted-foreground mb-6">
-              Select an occasion and click Generate to get AI-powered outfit suggestions tailored just for you.
-            </p>
-            {wardrobe.length === 0 && (
-              <p className="text-sm text-primary">
-                Tip: Add items to your wardrobe for more personalized suggestions!
-              </p>
-            )}
-          </Card>
-        )}
-      </motion.div>
+          )}
+        </motion.div>
+      </div>
     </AppLayout>
   );
 }
