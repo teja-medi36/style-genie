@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +13,9 @@ import {
   Lightbulb,
   Palette,
   ChevronRight,
-  ImageIcon
+  ImageIcon,
+  User,
+  AlertCircle
 } from 'lucide-react';
 
 interface OutfitSuggestion {
@@ -46,6 +49,7 @@ const occasions = [
 export default function GetStyled() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [occasion, setOccasion] = useState('casual');
   const [loading, setLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<OutfitSuggestion | null>(null);
@@ -75,6 +79,9 @@ export default function GetStyled() {
       .eq('user_id', user?.id);
     setWardrobe(data || []);
   };
+
+  // Check if profile is complete enough for personalized suggestions
+  const isProfileComplete = profile && (profile.gender || profile.body_type || profile.style_preference);
 
   const generateOutfit = async () => {
     setLoading(true);
@@ -132,6 +139,30 @@ export default function GetStyled() {
           </h1>
           <p className="text-muted-foreground">Get personalized outfit recommendations with images</p>
         </div>
+
+        {/* Profile Warning */}
+        {!isProfileComplete && (
+          <div className="card-elevated p-6 max-w-lg mx-auto border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-900/10">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">Complete your profile for better suggestions</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload a photo or set your preferences (gender, body type, style) to get outfits tailored to you.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/profile')}
+                  className="mt-2"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Go to Profile
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Occasion Selector */}
         <div className="card-elevated p-6 space-y-4 max-w-lg mx-auto">
