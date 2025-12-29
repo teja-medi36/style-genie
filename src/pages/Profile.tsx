@@ -107,6 +107,8 @@ export default function Profile() {
     hair_style: '',
     style_preference: '',
     preferred_colors: [] as string[],
+    gender: '',
+    avatar_url: '',
   });
 
   // Camera functions
@@ -204,15 +206,23 @@ export default function Profile() {
 
       const analysis = data.analysis;
       
+      // Update profile with analysis results including gender
       setProfile(prev => ({
         ...prev,
         body_type: analysis.body_type || prev.body_type,
         skin_tone: analysis.skin_tone || prev.skin_tone,
         hair_color: analysis.hair_color || prev.hair_color,
         hair_style: analysis.hair_style || prev.hair_style,
+        gender: analysis.gender || prev.gender,
+        avatar_url: base64,
       }));
 
-      toast({ title: 'Analysis Complete', description: `Detected with ${analysis.confidence}% confidence.` });
+      // Show gender detection result
+      const genderText = analysis.gender === 'male' ? 'Male' : analysis.gender === 'female' ? 'Female' : 'Not specified';
+      toast({ 
+        title: 'Analysis Complete', 
+        description: `Detected: ${genderText} profile with ${analysis.confidence}% confidence.` 
+      });
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast({ title: 'Analysis Failed', description: 'Could not analyze the image.', variant: 'destructive' });
@@ -266,7 +276,13 @@ export default function Profile() {
         hair_style: data.hair_style || '',
         style_preference: data.style_preference || '',
         preferred_colors: data.preferred_colors || [],
+        gender: (data as any).gender || '',
+        avatar_url: data.avatar_url || '',
       });
+      // Set preview image if avatar exists
+      if (data.avatar_url) {
+        setPreviewImage(data.avatar_url);
+      }
     }
     setLoading(false);
   };
@@ -284,6 +300,8 @@ export default function Profile() {
         hair_style: profile.hair_style || null,
         style_preference: profile.style_preference || null,
         preferred_colors: profile.preferred_colors.length > 0 ? profile.preferred_colors : null,
+        gender: profile.gender || null,
+        avatar_url: profile.avatar_url || null,
       })
       .eq('user_id', user?.id);
 

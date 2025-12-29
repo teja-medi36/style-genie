@@ -47,6 +47,7 @@ export type Database = {
           body_type: string | null
           created_at: string
           full_name: string | null
+          gender: string | null
           hair_color: string | null
           hair_style: string | null
           id: string
@@ -61,6 +62,7 @@ export type Database = {
           body_type?: string | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
           hair_color?: string | null
           hair_style?: string | null
           id?: string
@@ -75,6 +77,7 @@ export type Database = {
           body_type?: string | null
           created_at?: string
           full_name?: string | null
+          gender?: string | null
           hair_color?: string | null
           hair_style?: string | null
           id?: string
