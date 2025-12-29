@@ -23,11 +23,25 @@ serve(async (req) => {
       ? wardrobe.map((item: any) => `${item.color} ${item.category} (${item.name})`).join(', ')
       : 'No items in wardrobe yet';
 
+    // Determine gender for appropriate outfit suggestions
+    const gender = profile?.gender || 'unspecified';
+    const genderContext = gender === 'male' 
+      ? "The user is MALE. Suggest masculine clothing items like: men's shirts, trousers, suits, blazers, jeans, t-shirts, polo shirts, chinos, leather jackets, etc. Do NOT suggest dresses, skirts, or feminine items."
+      : gender === 'female'
+      ? "The user is FEMALE. Suggest feminine clothing items like: dresses, skirts, blouses, women's jeans, heels, flats, cardigans, etc."
+      : "Gender not specified. Suggest gender-neutral or versatile clothing items.";
+
+    console.log("User gender:", gender);
+    console.log("Gender context:", genderContext);
+
     const profileDescription = profile 
-      ? `Body type: ${profile.body_type || 'not specified'}, Skin tone: ${profile.skin_tone || 'not specified'}, Hair color: ${profile.hair_color || 'not specified'}, Hair style: ${profile.hair_style || 'not specified'}, Style preference: ${profile.style_preference || 'not specified'}, Preferred colors: ${profile.preferred_colors?.join(', ') || 'not specified'}`
+      ? `Gender: ${gender}, Body type: ${profile.body_type || 'not specified'}, Skin tone: ${profile.skin_tone || 'not specified'}, Hair color: ${profile.hair_color || 'not specified'}, Hair style: ${profile.hair_style || 'not specified'}, Style preference: ${profile.style_preference || 'not specified'}, Preferred colors: ${profile.preferred_colors?.join(', ') || 'not specified'}`
       : 'No profile information available';
 
-    const systemPrompt = `You are StyleAI, an expert fashion stylist AI. Your role is to suggest perfect outfit combinations based on the user's profile, wardrobe, and occasion. Be specific about colors, styles, and brands.
+    const systemPrompt = `You are StyleAI, an expert fashion stylist AI. Your role is to suggest perfect outfit combinations based on the user's profile, wardrobe, and occasion.
+
+CRITICAL INSTRUCTION - GENDER-APPROPRIATE OUTFITS:
+${genderContext}
 
 Always respond with a JSON object in this exact format:
 {
@@ -41,8 +55,10 @@ Always respond with a JSON object in this exact format:
   "explanation": "Brief friendly explanation of why this outfit works",
   "styling_tips": ["tip 1", "tip 2", "tip 3"],
   "color_harmony": "explanation of color coordination",
-  "image_prompt": "A detailed fashion photography prompt describing a complete outfit: [describe the full outfit as it would look on a fashion mannequin or flat lay, include all colors, textures, and style details]"
-}`;
+  "image_prompt": "A detailed fashion photography prompt describing a complete outfit for a ${gender === 'male' ? 'man' : gender === 'female' ? 'woman' : 'person'}: [describe the full outfit with all colors, textures, and style details]"
+}
+
+IMPORTANT: Make sure ALL clothing items are appropriate for the user's gender.`;
 
     const userPrompt = `Please suggest an outfit for: ${occasion || 'casual everyday'}
 
@@ -51,7 +67,9 @@ WARDROBE: ${wardrobeDescription}
 
 ${wardrobe && wardrobe.length > 0 
   ? 'Prioritize items from my wardrobe when possible.'
-  : 'Suggest items I should consider purchasing.'}`;
+  : 'Suggest items I should consider purchasing.'}
+
+Remember: Suggest ${gender === 'male' ? "MEN'S" : gender === 'female' ? "WOMEN'S" : "gender-neutral"} clothing items only.`;
 
     console.log('Calling AI gateway for outfit suggestion...');
     
@@ -103,26 +121,29 @@ ${wardrobe && wardrobe.length > 0
       suggestion = JSON.parse(jsonStr.trim());
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', parseError);
+      // Provide gender-appropriate fallback
+      const isMale = gender === 'male';
       suggestion = {
         outfit: {
-          top: "Classic white button-down shirt",
-          bottom: "Navy blue chinos",
+          top: isMale ? "Classic white button-down shirt" : "Elegant white blouse",
+          bottom: isMale ? "Navy blue chinos" : "High-waisted navy trousers",
           outerwear: null,
-          shoes: "Brown leather loafers",
-          accessories: "Simple leather watch"
+          shoes: isMale ? "Brown leather loafers" : "Nude pointed-toe heels",
+          accessories: isMale ? "Simple leather watch" : "Gold pendant necklace"
         },
         explanation: content || "A timeless combination that works for most occasions.",
         styling_tips: ["Keep accessories minimal", "Ensure proper fit", "Iron clothes for a crisp look"],
         color_harmony: "Navy and white is a classic pairing that suits most skin tones.",
-        image_prompt: "Fashion flat lay photography of a complete outfit: white button-down shirt, navy blue chinos, brown leather loafers, and a leather watch, arranged elegantly on a neutral background"
+        image_prompt: `Fashion flat lay photography of a complete ${isMale ? "men's" : "women's"} outfit: ${isMale ? "white button-down shirt, navy blue chinos, brown leather loafers" : "white blouse, navy trousers, nude heels"}, arranged elegantly on a neutral background`
       };
     }
 
     // Step 2: Generate outfit image
     let outfitImage = null;
     try {
+      const genderWord = gender === 'male' ? "men's" : gender === 'female' ? "women's" : "";
       const imagePrompt = suggestion.image_prompt || 
-        `Fashion photography flat lay of a complete ${occasion} outfit: ${suggestion.outfit.top}, ${suggestion.outfit.bottom}, ${suggestion.outfit.shoes}${suggestion.outfit.outerwear ? ', ' + suggestion.outfit.outerwear : ''}${suggestion.outfit.accessories ? ', ' + suggestion.outfit.accessories : ''}, styled professionally on a clean background, high-end fashion editorial style`;
+        `Fashion photography flat lay of a complete ${genderWord} ${occasion} outfit: ${suggestion.outfit.top}, ${suggestion.outfit.bottom}, ${suggestion.outfit.shoes}${suggestion.outfit.outerwear ? ', ' + suggestion.outfit.outerwear : ''}${suggestion.outfit.accessories ? ', ' + suggestion.outfit.accessories : ''}, styled professionally on a clean background, high-end fashion editorial style`;
 
       console.log('Generating outfit image...');
       
@@ -137,7 +158,7 @@ ${wardrobe && wardrobe.length > 0
           messages: [
             { 
               role: 'user', 
-              content: `Generate a high-quality fashion flat lay image: ${imagePrompt}. Make it look like a professional fashion magazine photoshoot with clean styling.`
+              content: `Generate a high-quality fashion flat lay image: ${imagePrompt}. Make it look like a professional fashion magazine photoshoot with clean styling. This is ${genderWord} clothing.`
             }
           ],
           modalities: ['image', 'text']

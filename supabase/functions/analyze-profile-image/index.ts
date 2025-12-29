@@ -25,6 +25,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    console.log("Analyzing profile image for physical attributes and gender...");
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -36,10 +38,17 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI fashion stylist assistant that analyzes photos to determine physical attributes for fashion recommendations. Analyze the image and provide the following attributes.
+            content: `You are an AI fashion stylist assistant that analyzes photos to determine physical attributes for fashion recommendations. Your primary task is to accurately identify the person's GENDER and other attributes to provide appropriate fashion recommendations.
+
+CRITICAL: Pay close attention to identifying gender correctly:
+- Look for facial features: jawline, facial hair, adam's apple
+- Consider hairstyle patterns
+- Look at clothing style if visible
+- Consider overall body structure
 
 You MUST respond with a valid JSON object with these exact fields:
 {
+  "gender": "male" | "female" | "unspecified",
   "body_type": "slim" | "athletic" | "average" | "curvy" | "plus",
   "skin_tone": "fair" | "light" | "medium" | "olive" | "tan" | "dark",
   "hair_color": "blonde" | "brown" | "black" | "red" | "gray" | "other",
@@ -47,14 +56,22 @@ You MUST respond with a valid JSON object with these exact fields:
   "confidence": number between 0 and 100
 }
 
-Be respectful and inclusive in your analysis. If you cannot determine an attribute clearly, make your best estimation based on what's visible. Only return the JSON object, no other text.`
+IMPORTANT NOTES:
+- Gender detection is CRUCIAL for appropriate fashion recommendations
+- If the person appears to be male, set gender to "male"
+- If the person appears to be female, set gender to "female"
+- Only use "unspecified" if you truly cannot determine
+- Be respectful and inclusive in your analysis
+- If you cannot determine an attribute clearly, make your best estimation
+
+Only return the JSON object, no other text.`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Analyze this photo and determine my body type, skin tone, hair color, and hair style for fashion recommendations."
+                text: "Analyze this photo and determine the person's gender, body type, skin tone, hair color, and hair style for personalized fashion recommendations. Pay special attention to correctly identifying gender."
               },
               {
                 type: "image_url",
@@ -93,6 +110,8 @@ Be respectful and inclusive in your analysis. If you cannot determine an attribu
       throw new Error("No response from AI");
     }
 
+    console.log("AI response:", content);
+
     // Parse the JSON response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -100,6 +119,9 @@ Be respectful and inclusive in your analysis. If you cannot determine an attribu
     }
 
     const analysis = JSON.parse(jsonMatch[0]);
+    
+    console.log("Parsed analysis:", JSON.stringify(analysis));
+    console.log("Detected gender:", analysis.gender);
 
     return new Response(
       JSON.stringify({ analysis }),
