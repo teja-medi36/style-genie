@@ -1,7 +1,7 @@
 project_id = "ktdbpakqyjbdpjzsprse"
 
 [functions.analyze-profile-image]
-verify_jwt = true
+verify_jwt = false
 
 [functions.detect-clothing]
 verify_jwt = false
