@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,19 @@ import {
   Sparkles,
   Camera,
   Check,
-  ChevronRight
+  ChevronRight,
+  Upload,
+  Video,
+  X,
+  SwitchCamera,
+  Circle
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const bodyTypes = [
   { value: 'slim', label: 'Slim', icon: '🏃' },
@@ -80,7 +91,14 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [cameraReady, setCameraReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [profile, setProfile] = useState({
     full_name: '',
     body_type: '',
@@ -90,6 +108,118 @@ export default function Profile() {
     style_preference: '',
     preferred_colors: [] as string[],
   });
+
+  // Camera functions
+  const startCamera = useCallback(async () => {
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          setCameraReady(true);
+        };
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        title: 'Camera Error',
+        description: 'Could not access your camera. Please check permissions.',
+        variant: 'destructive',
+      });
+      setShowCamera(false);
+    }
+  }, [facingMode, toast]);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraReady(false);
+  }, []);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Flip horizontally if using front camera
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    
+    ctx.drawImage(video, 0, 0);
+    
+    const base64 = canvas.toDataURL('image/jpeg', 0.9);
+    stopCamera();
+    setShowCamera(false);
+    processImage(base64);
+  }, [facingMode, stopCamera]);
+
+  const switchCamera = useCallback(() => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }, []);
+
+  useEffect(() => {
+    if (showCamera) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [showCamera, startCamera, stopCamera]);
+
+  useEffect(() => {
+    if (showCamera && cameraReady) {
+      startCamera();
+    }
+  }, [facingMode]);
+
+  const processImage = async (base64: string) => {
+    setPreviewImage(base64);
+    setAnalyzing(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-profile-image', {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      const analysis = data.analysis;
+      
+      setProfile(prev => ({
+        ...prev,
+        body_type: analysis.body_type || prev.body_type,
+        skin_tone: analysis.skin_tone || prev.skin_tone,
+        hair_color: analysis.hair_color || prev.hair_color,
+        hair_style: analysis.hair_style || prev.hair_style,
+      }));
+
+      toast({ title: 'Analysis Complete', description: `Detected with ${analysis.confidence}% confidence.` });
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast({ title: 'Analysis Failed', description: 'Could not analyze the image.', variant: 'destructive' });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,39 +235,14 @@ export default function Profile() {
       return;
     }
 
-    setAnalyzing(true);
+    setShowPhotoOptions(false);
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        setPreviewImage(base64);
-
-        const { data, error } = await supabase.functions.invoke('analyze-profile-image', {
-          body: { imageBase64: base64 },
-        });
-
-        if (error) throw error;
-
-        const analysis = data.analysis;
-        
-        setProfile(prev => ({
-          ...prev,
-          body_type: analysis.body_type || prev.body_type,
-          skin_tone: analysis.skin_tone || prev.skin_tone,
-          hair_color: analysis.hair_color || prev.hair_color,
-          hair_style: analysis.hair_style || prev.hair_style,
-        }));
-
-        toast({ title: 'Analysis Complete', description: `Detected with ${analysis.confidence}% confidence.` });
-        setAnalyzing(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-      toast({ title: 'Analysis Failed', description: 'Could not analyze the image.', variant: 'destructive' });
-      setAnalyzing(false);
-    }
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      processImage(base64);
+    };
+    reader.readAsDataURL(file);
   };
 
   useEffect(() => {
@@ -233,7 +338,7 @@ export default function Profile() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => !analyzing && fileInputRef.current?.click()}
+                  onClick={() => !analyzing && setShowPhotoOptions(true)}
                   className={`relative w-36 h-36 md:w-44 md:h-44 rounded-full cursor-pointer overflow-hidden transition-all duration-500 ${
                     analyzing ? 'animate-pulse' : ''
                   }`}
@@ -462,6 +567,122 @@ export default function Profile() {
           </Button>
         </motion.div>
       </motion.div>
+
+      {/* Photo Options Dialog */}
+      <Dialog open={showPhotoOptions} onOpenChange={setShowPhotoOptions}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Add Profile Photo</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setShowPhotoOptions(false);
+                setShowCamera(true);
+              }}
+              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-secondary/50 hover:bg-secondary transition-colors"
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
+                <Video className="w-7 h-7 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold">Take Photo</p>
+                <p className="text-xs text-muted-foreground">Use your camera</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-secondary/50 hover:bg-secondary transition-colors"
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
+                <Upload className="w-7 h-7 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold">Upload Photo</p>
+                <p className="text-xs text-muted-foreground">Choose from device</p>
+              </div>
+            </motion.button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Camera Modal */}
+      <Dialog open={showCamera} onOpenChange={(open) => {
+        if (!open) stopCamera();
+        setShowCamera(open);
+      }}>
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+          <div className="relative aspect-[3/4] bg-black">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+            />
+            <canvas ref={canvasRef} className="hidden" />
+
+            {/* Camera loading overlay */}
+            {!cameraReady && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                <div className="text-center">
+                  <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">Starting camera...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Face guide overlay */}
+            {cameraReady && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-48 h-56 border-2 border-dashed border-white/40 rounded-[50%]" />
+              </div>
+            )}
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowCamera(false)}
+              className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Switch camera button */}
+            <button
+              onClick={switchCamera}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            >
+              <SwitchCamera className="w-5 h-5" />
+            </button>
+
+            {/* Capture controls */}
+            {cameraReady && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={capturePhoto}
+                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg"
+                >
+                  <Circle className="w-14 h-14 text-primary fill-primary/20" />
+                </motion.button>
+              </div>
+            )}
+          </div>
+          
+          {/* Instructions */}
+          <div className="p-4 bg-background text-center">
+            <p className="text-sm text-muted-foreground">
+              Position your face in the circle for best AI analysis
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
