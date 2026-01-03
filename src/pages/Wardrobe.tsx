@@ -230,25 +230,25 @@ export default function Wardrobe() {
         className="space-y-6"
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold truncate">
               My <span className="text-gradient-orange">Wardrobe</span>
             </h1>
-            <p className="text-muted-foreground">{items.length} items</p>
+            <p className="text-sm text-muted-foreground">{items.length} items</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-5 h-5 mr-1" />
-                Add
+              <Button className="shrink-0">
+                <Plus className="w-5 h-5 sm:mr-1" />
+                <span className="hidden sm:inline">Add</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="card-elevated border-0">
+            <DialogContent className="card-elevated border-0 max-w-[95vw] sm:max-w-lg mx-auto">
               <DialogHeader>
-                <DialogTitle className="font-display text-2xl">Add Item</DialogTitle>
+                <DialogTitle className="font-display text-xl sm:text-2xl">Add Item</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4 max-h-[70vh] overflow-y-auto pr-1">
                 {/* Image Upload */}
                 <div className="space-y-2">
                   <Label>Photo (optional)</Label>
@@ -341,10 +341,10 @@ export default function Wardrobe() {
         </div>
 
         {/* Filter */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 scrollbar-hide">
           <button
             onClick={() => setFilterCategory('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
               filterCategory === 'all' 
                 ? 'bg-foreground text-background' 
                 : 'bg-secondary text-muted-foreground'
@@ -356,7 +356,7 @@ export default function Wardrobe() {
             <button
               key={cat.value}
               onClick={() => setFilterCategory(cat.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                 filterCategory === cat.value 
                   ? 'bg-foreground text-background' 
                   : 'bg-secondary text-muted-foreground'
@@ -373,7 +373,7 @@ export default function Wardrobe() {
             <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="card-clean text-center p-8">
+          <div className="card-clean text-center p-6 sm:p-8">
             <div className="icon-circle mx-auto mb-4">
               <Shirt className="w-5 h-5 text-muted-foreground" />
             </div>
@@ -385,7 +385,7 @@ export default function Wardrobe() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <AnimatePresence>
               {filteredItems.map((item, index) => (
                 <motion.div
@@ -396,36 +396,36 @@ export default function Wardrobe() {
                   transition={{ delay: index * 0.03 }}
                 >
                   <div className="category-item group">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {item.image_url ? (
                         <img 
                           src={item.image_url} 
                           alt={item.name} 
-                          className="w-12 h-12 rounded-xl object-cover"
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover shrink-0"
                         />
                       ) : (
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[item.color] || 'bg-muted'}`}>
-                          <ImageIcon className="w-5 h-5 text-white/50" />
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${colorClasses[item.color] || 'bg-muted'}`}>
+                          <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" />
                         </div>
                       )}
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate text-sm sm:text-base">{item.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground capitalize truncate">
                           {item.category} · {item.color}
                           {item.brand && ` · ${item.brand}`}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => toggleFavorite(item.id, item.is_favorite)}
-                        className="p-2 rounded-full hover:bg-secondary transition-colors"
+                        className="p-2 rounded-full hover:bg-secondary transition-colors active:scale-95"
                       >
                         <Heart className={`w-4 h-4 ${item.is_favorite ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
                       </button>
                       <button
                         onClick={() => deleteItem(item.id)}
-                        className="p-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                        className="p-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors active:scale-95"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
