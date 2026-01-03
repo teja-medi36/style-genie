@@ -5,6 +5,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitize user input to prevent prompt injection
+function sanitizeInput(input: string | null | undefined, maxLength = 200): string {
+  if (!input || typeof input !== 'string') return '';
+  // Remove potential prompt injection patterns
+  return input
+    .replace(/[\r\n]+/g, ' ') // Remove newlines
+    .replace(/[<>{}[\]]/g, '') // Remove brackets that could be used for injection
+    .replace(/ignore.*previous.*instructions?/gi, '') // Block common injection phrases
+    .replace(/system.*prompt/gi, '')
+    .replace(/you.*are.*now/gi, '')
+    .slice(0, maxLength)
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,15 +30,39 @@ serve(async (req) => {
     
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
-      throw new Error('LOVABLE_API_KEY is not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error. Please try again later.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const wardrobeDescription = wardrobe && wardrobe.length > 0 
-      ? wardrobe.map((item: any) => `${item.color} ${item.category} (${item.name})`).join(', ')
+    // Sanitize occasion input
+    const sanitizedOccasion = sanitizeInput(occasion, 50) || 'casual everyday';
+
+    // Sanitize wardrobe items
+    const sanitizedWardrobe = (wardrobe || []).slice(0, 50).map((item: any) => ({
+      color: sanitizeInput(item?.color, 30),
+      category: sanitizeInput(item?.category, 30),
+      name: sanitizeInput(item?.name, 50)
+    }));
+
+    const wardrobeDescription = sanitizedWardrobe.length > 0 
+      ? sanitizedWardrobe.map((item: any) => `${item.color} ${item.category} (${item.name})`).join(', ')
       : 'No items in wardrobe yet';
 
+    // Sanitize profile data
+    const sanitizedProfile = profile ? {
+      gender: sanitizeInput(profile.gender, 20),
+      body_type: sanitizeInput(profile.body_type, 30),
+      skin_tone: sanitizeInput(profile.skin_tone, 30),
+      hair_color: sanitizeInput(profile.hair_color, 30),
+      hair_style: sanitizeInput(profile.hair_style, 30),
+      style_preference: sanitizeInput(profile.style_preference, 50),
+      preferred_colors: (profile.preferred_colors || []).slice(0, 10).map((c: string) => sanitizeInput(c, 20))
+    } : null;
+
     // Determine gender for appropriate outfit suggestions
-    const gender = profile?.gender || 'unspecified';
+    const gender = sanitizedProfile?.gender || 'unspecified';
     const genderContext = gender === 'male' 
       ? "The user is MALE. Suggest masculine clothing items like: men's shirts, trousers, suits, blazers, jeans, t-shirts, polo shirts, chinos, leather jackets, etc. Do NOT suggest dresses, skirts, or feminine items."
       : gender === 'female'
@@ -32,10 +70,9 @@ serve(async (req) => {
       : "Gender not specified. Suggest gender-neutral or versatile clothing items.";
 
     console.log("User gender:", gender);
-    console.log("Gender context:", genderContext);
 
-    const profileDescription = profile 
-      ? `Gender: ${gender}, Body type: ${profile.body_type || 'not specified'}, Skin tone: ${profile.skin_tone || 'not specified'}, Hair color: ${profile.hair_color || 'not specified'}, Hair style: ${profile.hair_style || 'not specified'}, Style preference: ${profile.style_preference || 'not specified'}, Preferred colors: ${profile.preferred_colors?.join(', ') || 'not specified'}`
+    const profileDescription = sanitizedProfile 
+      ? `Gender: ${gender}, Body type: ${sanitizedProfile.body_type || 'not specified'}, Skin tone: ${sanitizedProfile.skin_tone || 'not specified'}, Hair color: ${sanitizedProfile.hair_color || 'not specified'}, Hair style: ${sanitizedProfile.hair_style || 'not specified'}, Style preference: ${sanitizedProfile.style_preference || 'not specified'}, Preferred colors: ${sanitizedProfile.preferred_colors?.join(', ') || 'not specified'}`
       : 'No profile information available';
 
     const systemPrompt = `You are StyleAI, an expert fashion stylist AI. Your role is to suggest perfect outfit combinations based on the user's profile, wardrobe, and occasion.
@@ -60,12 +97,12 @@ Always respond with a JSON object in this exact format:
 
 IMPORTANT: Make sure ALL clothing items are appropriate for the user's gender.`;
 
-    const userPrompt = `Please suggest an outfit for: ${occasion || 'casual everyday'}
+    const userPrompt = `Please suggest an outfit for: ${sanitizedOccasion}
 
 USER PROFILE: ${profileDescription}
 WARDROBE: ${wardrobeDescription}
 
-${wardrobe && wardrobe.length > 0 
+${sanitizedWardrobe.length > 0 
   ? 'Prioritize items from my wardrobe when possible.'
   : 'Suggest items I should consider purchasing.'}
 
@@ -105,7 +142,10 @@ Remember: Suggest ${gender === 'male' ? "MEN'S" : gender === 'female' ? "WOMEN'S
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      throw new Error(`AI gateway error: ${textResponse.status}`);
+      return new Response(JSON.stringify({ error: 'Failed to generate outfit suggestion. Please try again.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const textData = await textResponse.json();
@@ -131,7 +171,7 @@ Remember: Suggest ${gender === 'male' ? "MEN'S" : gender === 'female' ? "WOMEN'S
           shoes: isMale ? "Brown leather loafers" : "Nude pointed-toe heels",
           accessories: isMale ? "Simple leather watch" : "Gold pendant necklace"
         },
-        explanation: content || "A timeless combination that works for most occasions.",
+        explanation: "A timeless combination that works for most occasions.",
         styling_tips: ["Keep accessories minimal", "Ensure proper fit", "Iron clothes for a crisp look"],
         color_harmony: "Navy and white is a classic pairing that suits most skin tones.",
         image_prompt: `Fashion flat lay photography of a complete ${isMale ? "men's" : "women's"} outfit: ${isMale ? "white button-down shirt, navy blue chinos, brown leather loafers" : "white blouse, navy trousers, nude heels"}, arranged elegantly on a neutral background`
@@ -143,7 +183,7 @@ Remember: Suggest ${gender === 'male' ? "MEN'S" : gender === 'female' ? "WOMEN'S
     try {
       const genderWord = gender === 'male' ? "men's" : gender === 'female' ? "women's" : "";
       const imagePrompt = suggestion.image_prompt || 
-        `Fashion photography flat lay of a complete ${genderWord} ${occasion} outfit: ${suggestion.outfit.top}, ${suggestion.outfit.bottom}, ${suggestion.outfit.shoes}${suggestion.outfit.outerwear ? ', ' + suggestion.outfit.outerwear : ''}${suggestion.outfit.accessories ? ', ' + suggestion.outfit.accessories : ''}, styled professionally on a clean background, high-end fashion editorial style`;
+        `Fashion photography flat lay of a complete ${genderWord} ${sanitizedOccasion} outfit: ${suggestion.outfit.top}, ${suggestion.outfit.bottom}, ${suggestion.outfit.shoes}${suggestion.outfit.outerwear ? ', ' + suggestion.outfit.outerwear : ''}${suggestion.outfit.accessories ? ', ' + suggestion.outfit.accessories : ''}, styled professionally on a clean background, high-end fashion editorial style`;
 
       console.log('Generating outfit image...');
       
@@ -189,9 +229,7 @@ Remember: Suggest ${gender === 'male' ? "MEN'S" : gender === 'female' ? "WOMEN'S
 
   } catch (error) {
     console.error('Error in suggest-outfit function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'An unexpected error occurred' 
-    }), {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validate image input
+function isValidImageInput(image: string): boolean {
+  if (!image || typeof image !== 'string') return false;
+  
+  // Check for valid data URL or HTTPS URL
+  const isDataUrl = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/i.test(image);
+  const isHttpsUrl = /^https:\/\//i.test(image);
+  
+  if (!isDataUrl && !isHttpsUrl) return false;
+  
+  // Check reasonable size for base64 (max ~10MB)
+  if (isDataUrl && image.length > 10 * 1024 * 1024) return false;
+  
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,12 +31,27 @@ serve(async (req) => {
     const { image } = await req.json();
     
     if (!image) {
-      throw new Error('No image provided');
+      return new Response(JSON.stringify({ error: 'No image provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate image format
+    if (!isValidImageInput(image)) {
+      return new Response(JSON.stringify({ error: 'Invalid image format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+      console.error('LOVABLE_API_KEY is not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error. Please try again later.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Detecting clothing items in image...');
@@ -72,19 +103,25 @@ Be precise with positions - consider where items are actually located in the ima
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      console.error('AI API error:', response.status, await response.text());
+      return new Response(JSON.stringify({ error: 'Failed to analyze image. Please try again.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No response from AI');
+      console.error('No content in AI response');
+      return new Response(JSON.stringify({ error: 'Failed to analyze image. Please try again.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('AI response:', content);
+    console.log('AI response received');
 
     // Parse the JSON from the response
     let items = [];
@@ -105,8 +142,7 @@ Be precise with positions - consider where items are actually located in the ima
 
   } catch (error) {
     console.error('Error in detect-clothing function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
