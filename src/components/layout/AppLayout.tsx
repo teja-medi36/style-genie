@@ -33,7 +33,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto">
-        <div className="p-6 lg:p-8 pt-20 lg:pt-8 max-w-7xl mx-auto">
+        <div className="px-4 py-6 sm:px-6 lg:px-8 pt-20 lg:pt-8 max-w-7xl mx-auto">
           {children}
         </div>
       </main>

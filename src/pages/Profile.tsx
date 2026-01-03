@@ -340,10 +340,10 @@ export default function Profile() {
         className="max-w-4xl mx-auto pb-12"
       >
         {/* Header with Photo Upload */}
-        <div className="relative mb-12">
+        <div className="relative mb-8 sm:mb-12">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent rounded-3xl blur-3xl" />
-          <div className="relative glass-panel rounded-3xl p-8 md:p-12">
-            <div className="flex flex-col md:flex-row items-center gap-8">
+          <div className="relative glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center gap-5 sm:gap-8">
               {/* Photo Upload Area */}
               <div className="relative group">
                 <input
@@ -404,18 +404,18 @@ export default function Profile() {
               </div>
 
               {/* Name and Email */}
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 text-gradient-gold">
+              <div className="flex-1 text-center md:text-left w-full md:w-auto">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-2 text-gradient-gold">
                   Style Profile
                 </h1>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                   Upload a photo for AI-powered feature detection
                 </p>
                 <Input
                   value={profile.full_name}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                   placeholder="Your name"
-                  className="max-w-xs bg-secondary/50 border-border/50"
+                  className="max-w-xs mx-auto md:mx-0 bg-secondary/50 border-border/50"
                 />
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function Profile() {
 
         {/* Body Type Selection */}
         <Section title="Body Type" icon={<User className="w-5 h-5" />}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
             {bodyTypes.map((type) => (
               <SelectCard
                 key={type.value}
@@ -504,7 +504,7 @@ export default function Profile() {
 
         {/* Style Preference */}
         <Section title="Style Preference" icon={<Sparkles className="w-5 h-5" />}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
             {stylePreferences.map((style) => (
               <motion.button
                 key={style.value}
@@ -533,8 +533,8 @@ export default function Profile() {
 
         {/* Preferred Colors */}
         <Section title="Preferred Colors" icon={<Palette className="w-5 h-5" />}>
-          <p className="text-sm text-muted-foreground mb-4">Select colors you love to wear</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">Select colors you love to wear</p>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {colorOptions.map((color) => (
               <motion.button
                 key={color.name}
@@ -565,14 +565,14 @@ export default function Profile() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex justify-center mt-12"
+          className="flex justify-center mt-8 sm:mt-12 pb-6"
         >
           <Button 
             variant="gold" 
             size="lg" 
             onClick={handleSave} 
             disabled={saving}
-            className="px-12 py-6 text-lg shadow-gold"
+            className="w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 text-base sm:text-lg shadow-gold"
           >
             {saving ? (
               <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -711,11 +711,11 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-10"
+      className="mb-6 sm:mb-10"
     >
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4">
         <span className="text-primary">{icon}</span>
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="text-base sm:text-lg font-semibold">{title}</h2>
       </div>
       {children}
     </motion.div>
@@ -737,7 +737,7 @@ function SelectCard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-300 ${
+      className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 active:scale-95 ${
         selected
           ? 'bg-primary/15 border-2 border-primary shadow-gold'
           : 'bg-secondary/30 border-2 border-transparent hover:border-border/50'
@@ -745,7 +745,7 @@ function SelectCard({
     >
       {children}
       {selected && (
-        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
           <Check className="w-2.5 h-2.5 text-primary-foreground" />
         </div>
       )}
@@ -768,7 +768,7 @@ function SelectPill({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+      className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 active:scale-95 ${
         selected
           ? 'bg-primary text-primary-foreground shadow-gold'
           : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'

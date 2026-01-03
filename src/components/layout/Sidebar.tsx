@@ -40,9 +40,9 @@ export default function Sidebar() {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors"
+        className="lg:hidden fixed top-3 left-3 sm:top-4 sm:left-4 z-50 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors shadow-sm active:scale-95"
       >
-        <Menu className="w-6 h-6 text-foreground" />
+        <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
       </button>
 
       {/* Mobile overlay */}
