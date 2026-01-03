@@ -84,8 +84,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-gold/5 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-gold/3 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-bl from-primary/5 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary/3 to-transparent rounded-full blur-3xl" />
       </div>
 
       <motion.div
@@ -94,17 +94,20 @@ export default function Auth() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md z-10"
       >
-        <Card variant="glass" className="backdrop-blur-xl">
+        <Card className="backdrop-blur-xl border-border/50 bg-card/80">
           <CardHeader className="text-center pb-2">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-gold"
+              className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg"
             >
               <Sparkles className="w-8 h-8 text-primary-foreground" />
             </motion.div>
-            <CardTitle className="text-3xl text-gradient-gold">StyleAI</CardTitle>
+            <CardTitle className="text-3xl">
+              <span className="font-display font-light tracking-[0.1em] uppercase text-foreground">Style</span>
+              <span className="font-display font-semibold tracking-[0.08em] uppercase bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">Sync</span>
+            </CardTitle>
             <CardDescription className="text-muted-foreground mt-2">
               {isLogin ? 'Welcome back, style icon' : 'Create your style journey'}
             </CardDescription>
@@ -185,10 +188,10 @@ export default function Auth() {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-muted-foreground hover:text-gold transition-colors text-sm"
+                className="text-muted-foreground hover:text-primary transition-colors text-sm"
               >
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <span className="text-gold font-medium">
+                <span className="text-primary font-medium">
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </span>
               </button>
