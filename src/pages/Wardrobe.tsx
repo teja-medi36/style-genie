@@ -25,8 +25,11 @@ import {
   Shirt, 
   Trash2, 
   Heart,
-  ChevronRight
+  ChevronRight,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 interface WardrobeItem {
   id: string;
@@ -85,6 +88,9 @@ export default function Wardrobe() {
     brand: '',
     size: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (user) fetchItems();
@@ -106,12 +112,59 @@ export default function Wardrobe() {
     setLoading(false);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    if (!user?.id) return null;
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('wardrobe-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('wardrobe-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.category || !formData.color) {
       toast({ title: 'Missing fields', description: 'Please fill in all required fields', variant: 'destructive' });
       return;
+    }
+
+    setUploading(true);
+    let imageUrl: string | null = null;
+
+    if (imageFile) {
+      imageUrl = await uploadImage(imageFile);
+      if (!imageUrl) {
+        toast({ title: 'Error', description: 'Failed to upload image', variant: 'destructive' });
+        setUploading(false);
+        return;
+      }
     }
 
     const { error } = await supabase
@@ -123,13 +176,18 @@ export default function Wardrobe() {
         color: formData.color,
         brand: formData.brand || null,
         size: formData.size || null,
+        image_url: imageUrl,
       });
+
+    setUploading(false);
 
     if (error) {
       toast({ title: 'Error', description: 'Failed to add item', variant: 'destructive' });
     } else {
       toast({ title: 'Success', description: 'Item added to wardrobe' });
       setFormData({ name: '', category: '', color: '', brand: '', size: '' });
+      setImageFile(null);
+      setImagePreview(null);
       setIsOpen(false);
       fetchItems();
     }
@@ -191,6 +249,40 @@ export default function Wardrobe() {
                 <DialogTitle className="font-display text-2xl">Add Item</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label>Photo (optional)</Label>
+                  <div className="flex gap-3">
+                    <label className="flex-1 cursor-pointer">
+                      <div className={`h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-secondary/50 transition-colors ${imagePreview ? 'border-primary' : ''}`}>
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Preview" className="h-full w-full object-cover rounded-xl" />
+                        ) : (
+                          <>
+                            <Camera className="w-6 h-6 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Add photo</span>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="p-2 h-fit rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <Input
                   placeholder="Item name"
                   value={formData.name}
@@ -240,8 +332,8 @@ export default function Wardrobe() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-12">
-                  Add to Wardrobe
+                <Button type="submit" className="w-full h-12" disabled={uploading}>
+                  {uploading ? 'Uploading...' : 'Add to Wardrobe'}
                 </Button>
               </form>
             </DialogContent>
@@ -305,7 +397,17 @@ export default function Wardrobe() {
                 >
                   <div className="category-item group">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl ${colorClasses[item.color] || 'bg-muted'}`} />
+                      {item.image_url ? (
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name} 
+                          className="w-12 h-12 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[item.color] || 'bg-muted'}`}>
+                          <ImageIcon className="w-5 h-5 text-white/50" />
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-muted-foreground capitalize">
