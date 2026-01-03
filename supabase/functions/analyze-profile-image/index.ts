@@ -5,6 +5,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Validate base64 image format
+function isValidBase64Image(imageBase64: string): boolean {
+  if (!imageBase64 || typeof imageBase64 !== 'string') return false;
+  
+  // Check for valid data URL format
+  const dataUrlMatch = imageBase64.match(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/i);
+  if (!dataUrlMatch) return false;
+  
+  // Check reasonable size (max ~10MB base64 = ~7.5MB image)
+  if (imageBase64.length > 10 * 1024 * 1024) return false;
+  
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,9 +34,21 @@ serve(async (req) => {
       );
     }
 
+    // Validate image format
+    if (!isValidBase64Image(imageBase64)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid image format. Please upload a valid image." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Service configuration error. Please try again later." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log("Analyzing profile image for physical attributes and gender...");
@@ -86,6 +112,8 @@ Only return the JSON object, no other text.`
     });
 
     if (!response.ok) {
+      console.error("AI gateway error:", response.status, await response.text());
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
@@ -98,30 +126,38 @@ Only return the JSON object, no other text.`
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("Failed to analyze image");
+      return new Response(
+        JSON.stringify({ error: "Failed to analyze image. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error("No response from AI");
+      console.error("No content in AI response");
+      return new Response(
+        JSON.stringify({ error: "Failed to analyze image. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    console.log("AI response:", content);
+    console.log("AI response received");
 
     // Parse the JSON response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Invalid AI response format");
+      console.error("Invalid AI response format:", content);
+      return new Response(
+        JSON.stringify({ error: "Failed to analyze image. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const analysis = JSON.parse(jsonMatch[0]);
     
-    console.log("Parsed analysis:", JSON.stringify(analysis));
-    console.log("Detected gender:", analysis.gender);
+    console.log("Analysis complete, detected gender:", analysis.gender);
 
     return new Response(
       JSON.stringify({ analysis }),
@@ -130,7 +166,7 @@ Only return the JSON object, no other text.`
   } catch (error) {
     console.error("Error analyzing image:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Failed to analyze image" }),
+      JSON.stringify({ error: "Failed to analyze image. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -92,6 +92,15 @@ function getImageUrl(category: string): string {
   return 'https://images.unsplash.com/photo-1611923134239-b9be5816e23e?w=300&h=400&fit=crop'
 }
 
+// Sanitize input to prevent injection
+function sanitizeInput(input: string | null | undefined, maxLength = 100): string {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/[<>{}[\]]/g, '')
+    .slice(0, maxLength)
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -101,30 +110,46 @@ serve(async (req) => {
     const { item } = await req.json()
     
     if (!item || !item.label) {
-      throw new Error('No item provided')
+      return new Response(JSON.stringify({ error: 'No item provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    console.log('Searching for products matching:', item)
+    // Sanitize all inputs
+    const sanitizedLabel = sanitizeInput(item.label, 100);
+    const sanitizedColor = sanitizeInput(item.color, 30);
+    const sanitizedStyle = sanitizeInput(item.style, 30);
+    const sanitizedCategory = sanitizeInput(item.category, 30);
+
+    if (!sanitizedLabel) {
+      return new Response(JSON.stringify({ error: 'Invalid item label' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    console.log('Searching for products matching:', sanitizedLabel)
 
     // Build optimized search query
-    const searchTerms = [item.label]
-    if (item.color) searchTerms.push(item.color)
-    if (item.style) searchTerms.push(item.style)
+    const searchTerms = [sanitizedLabel]
+    if (sanitizedColor) searchTerms.push(sanitizedColor)
+    if (sanitizedStyle) searchTerms.push(sanitizedStyle)
     // Add "buy" keyword to get shopping results
     const searchQuery = `buy ${searchTerms.join(' ')}`
 
     // Generate shopping links with Google Shopping as primary for price comparison
     const products = shoppingLinks.map((store, index) => ({
       id: Date.now() + index,
-      name: store.isPrimary ? `Compare ${item.label} prices` : `${item.label}`,
+      name: store.isPrimary ? `Compare ${sanitizedLabel} prices` : `${sanitizedLabel}`,
       store: store.name,
       description: store.description,
       icon: store.icon,
       url: store.searchUrl(searchQuery),
-      image: getImageUrl(item.category || ''),
-      category: item.category,
-      color: item.color,
-      style: item.style,
+      image: getImageUrl(sanitizedCategory || ''),
+      category: sanitizedCategory,
+      color: sanitizedColor,
+      style: sanitizedStyle,
       isPrimary: store.isPrimary || false,
     }))
 
@@ -140,8 +165,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in search-products function:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
